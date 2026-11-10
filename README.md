@@ -111,7 +111,3 @@ The current build has been verified with:
 - A Windows NSIS installer and portable build, verified by silent install, installed-app launch (including PDF under the packaged CSP) and silent uninstall; the portable build was launched and checked for portable data. See [PROGRESS.md](PROGRESS.md).
 
 See [PROGRESS.md](PROGRESS.md) for an honest feature-by-feature status and known limitations.
-
-## License
-
-No license file has been added yet, as requested. A proposal and trade-offs are in [docs/LICENSE-PROPOSAL.md](docs/LICENSE-PROPOSAL.md). Until a license is chosen, the source is “all rights reserved” by default.
