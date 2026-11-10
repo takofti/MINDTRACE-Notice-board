@@ -20,7 +20,7 @@ Last verified: 2026-11-10 · version 1.0.0
 
 ## Verified checks
 
-Run `npm test` (26 tests) and `npm run e2e` (31 assertions). The current E2E output includes:
+Run `npm test` (26 tests) and `npm run e2e` (33 assertions). The current E2E output includes:
 
 - demo board and titlebar load;
 - note creation by double-click;
@@ -34,6 +34,7 @@ Run `npm test` (26 tests) and `npm run e2e` (31 assertions). The current E2E out
 - manual snapshot on disk;
 - project `.mndtr` export contains project + assets;
 - project import creates a new project with rewired asset URLs;
+- native PNG export through the Electron save dialog;
 - restart preserves the board;
 - no uncaught renderer errors.
 

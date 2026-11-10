@@ -412,6 +412,24 @@ if (imported) {
   check('imported assets are rewired to the new project', importedAssets.every((card) => card.assetUrl.includes(imported.id)))
 }
 
+// Native PNG export through the packaged save flow.
+const pngPath = join(artifacts, 'e2e-export.png')
+if (existsSync(pngPath)) rmSync(pngPath, { force: true })
+await app.evaluate(({ dialog }, filePath) => {
+  dialog.showSaveDialog = async () => ({ canceled: false, filePath })
+}, pngPath)
+await page.locator('.icon-btn[title^="Export board"]').click()
+await page.waitForSelector('.export-dialog')
+await page.getByRole('button', { name: 'Export PNG' }).click()
+for (let i = 0; i < 80 && !existsSync(pngPath); i++) await page.waitForTimeout(150)
+check('native PNG export produces a file', existsSync(pngPath), pngPath)
+if (existsSync(pngPath)) {
+  const bytes = readFileSync(pngPath)
+  check('PNG file has a valid signature and content', bytes.length > 2000 && bytes[0] === 0x89 && bytes[1] === 0x50, `bytes=${bytes.length}`)
+}
+await page.locator('.export-dialog .close-btn').click()
+await page.waitForFunction(() => !document.querySelector('.export-dialog'))
+
 const cardsBeforeClose = await page.locator('.card').count()
 await app.close()
 await new Promise((resolve) => setTimeout(resolve, 800))
