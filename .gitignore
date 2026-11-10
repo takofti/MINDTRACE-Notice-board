@@ -27,8 +27,5 @@ desktop.ini
 .idea/
 .vscode/
 
-# Git
-.gitignore
-
 # Documentation
 /docs/
