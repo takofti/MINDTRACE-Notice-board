@@ -15,4 +15,5 @@ desktop.ini
 .vscode/
 /promt.txt
 /Promt.txt
-.gitignor
+.gitignore
+/docs
