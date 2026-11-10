@@ -27,10 +27,6 @@ desktop.ini
 .idea/
 .vscode/
 
-# Private files
-/promt.txt
-/Promt.txt
-
 # Git
 .gitignore
 
