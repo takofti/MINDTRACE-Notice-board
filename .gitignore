@@ -1,0 +1,17 @@
+node_modules/
+out/
+release/
+test-artifacts/
+.vite/
+.temp/
+tmp/
+*.log
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+/promt.txt
+/Promt.txt

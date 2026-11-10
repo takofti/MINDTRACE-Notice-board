@@ -1,0 +1,101 @@
+{
+  "name": "mindtrace",
+  "version": "1.0.0",
+  "description": "An immersive investigation board for visual knowledge work.",
+  "main": "./out/main/index.js",
+  "author": "Mindtrace",
+  "license": "UNLICENSED",
+  "private": true,
+  "homepage": "https://github.com/your-org/mindtrace",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:web": "vite --config vite.web.config.ts",
+    "start": "electron-vite preview",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "npm run build && node scripts/e2e.mjs",
+    "e2e:ui": "npm run build && node scripts/ui-e2e.mjs",
+    "smoke:packaged": "node scripts/packaged-smoke.mjs",
+    "test:all": "npm run typecheck && npm test && npm run e2e",
+    "dist": "npm run build && electron-builder --win --publish never",
+    "dist:dir": "npm run build && electron-builder --win --dir --publish never",
+    "icon": "powershell -ExecutionPolicy Bypass -File scripts/make-icon.ps1 && node scripts/make-icon.mjs"
+  },
+  "dependencies": {
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.71.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^5.0.0",
+    "jsdom": "^28.0.0",
+    "playwright-core": "^1.65.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8",
+    "vitest": "^5.1.0"
+  },
+  "build": {
+    "appId": "com.mindtrace.board",
+    "productName": "Mindtrace",
+    "copyright": "Copyright © 2026 Mindtrace",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Mindtrace-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "shortcutName": "Mindtrace",
+      "artifactName": "Mindtrace-Setup-${version}.${ext}",
+      "uninstallDisplayName": "Mindtrace — Investigation Board",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Mindtrace-Portable-${version}.${ext}"
+    }
+  }
+}
