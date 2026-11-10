@@ -26,8 +26,6 @@ Download one of these from **Releases**:
 - `Mindtrace-Setup-<version>.exe` — normal installer. Choose the folder, create a desktop shortcut, launch when finished, uninstall through Windows Settings.
 - `Mindtrace-Portable-<version>.exe` — runs without installation.
 
-> The repository includes GitHub Actions that produce both files automatically from a `v*` tag.
-
 ## Run from source
 
 Requirements: **Node.js 22+** (Node 24 recommended) on Windows 10/11.
