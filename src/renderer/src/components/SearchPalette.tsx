@@ -17,6 +17,7 @@ import { contentBounds, plainTextFromHtml } from '@/core/geometry'
 import { groupBounds } from '@/core/geometry'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 type Item =
   | { kind: 'card'; key: string; space: Space; card: Card; title: string; sub: string }
@@ -154,7 +155,7 @@ export default function SearchPalette(): React.JSX.Element | null {
 
   return (
     <div className="search-overlay" onPointerDown={(event) => event.target === event.currentTarget && close()}>
-      <div className="search-dialog" role="dialog" aria-modal="true" aria-label="Search">
+      <div className="search-dialog" role="dialog" aria-modal="true" aria-label={t("Search")}>
         <div className="search-input-row">
           <Search size={18} className="search-icon" />
           <input
@@ -165,8 +166,8 @@ export default function SearchPalette(): React.JSX.Element | null {
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onKeyDown}
           />
-          <span className="kbd">Esc</span>
-          <button className="icon-btn" onClick={close} title="Close">
+          <span className="kbd">{t("Esc")}</span>
+          <button className="icon-btn" onClick={close} title={t("Close")}>
             <X size={15} />
           </button>
         </div>
@@ -303,7 +304,7 @@ export default function SearchPalette(): React.JSX.Element | null {
 
         <div className="search-footer">
           <span className="kbd">↑↓</span> {t('navigate')}
-          <span className="kbd">Enter</span> {t('jump to board')}
+          <span className="kbd">{t("Enter")}</span> {t('jump to board')}
           <span className="spacer" />
           <span>{t('Cards, files, categories and threads are searched together')}</span>
         </div>

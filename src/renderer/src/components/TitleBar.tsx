@@ -21,6 +21,7 @@ import { useUi } from '@/store/ui'
 import { useSettings } from '@/store/settings'
 import { isElectron, windowControls } from '@/services/storage'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 const MODES: { id: SpaceMode; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'normal', label: 'Board', icon: LayoutGrid },
@@ -101,7 +102,7 @@ export default function TitleBar(): React.JSX.Element {
         onClick={openHome}
       >
         <span className="brand-mark">M</span>
-        <span className="brand-name">MINDTRACE</span>
+        <span className="brand-name">{t("MINDTRACE")}</span>
       </button>
       <div className="title-divider" />
 

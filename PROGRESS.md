@@ -2,7 +2,7 @@
 
 This file records what is actually implemented, how it was checked, and what remains. It is updated alongside the code, not used as marketing.
 
-Last verified: 2026-11-10 · version 1.0.0
+Last verified: 2026-11-11 · version 1.1.0
 
 ## Stage status
 
@@ -15,13 +15,15 @@ Last verified: 2026-11-10 · version 1.0.0
 | 5. Organisation | ✅ | Multiple spaces with per-space cameras; project search; filters by text/category/type; groups (move/collapse/colour/ungroup); categories; minimap; Normal/Focus/Overview; chain selection with depth. Browser checks for search/group collapse. |
 | 6. Storage | ✅ | Atomic saves; autosave; rolling backups; manual snapshots; restore; session/crash detection; undo/redo; close flush; settings persistence; project archive import/export. E2E verifies on-disk project, snapshot, export/import, restart. |
 | 7. Extra media | ✅ | Video/audio native controls; PDF rendered with PDF.js (page navigation); DOCX via Mammoth; TXT/MD inline preview; file open/reveal. PDF.js + Mammoth previews verified end-to-end, as is image import. |
-| 8. Performance/testing | ⚠️ mostly | Culling, LOD labels, memoized cards, bounded imports, rAF drawing preview, quality presets, reduce-effects switches. 26 unit tests + full Electron E2E pass. Large-board stress test (thousands of cards) is documented as pending; see below. |
-| 9. Distribution | ✅ local / ⚠ publish | electron-builder produced NSIS installer and portable exe. Silent install, installed-app launch (including PDF.js under the packaged CSP), and silent uninstall were verified. Portable launch created `Mindtrace Data` beside the exe. GitHub Actions and release workflow are present, but no remote exists in this workspace so no GitHub release has been published. |
+| 8. Performance/testing | ⚠️ mostly | Culling, LOD labels, memoized cards, bounded imports, rAF drawing preview, quality presets, reduce-effects switches. CSS `zoom` keeps text and lines crisp at every scale. 26 unit tests, 39 desktop E2E assertions and 16 UI E2E assertions pass. Large-board stress test (thousands of cards) is documented as pending; see below. |
+| 9. Distribution | ✅ local / ⚠ publish | electron-builder produces the NSIS installer and portable exe. The 1.0.0 artifacts were verified by silent install, installed-app launch (including PDF.js under the packaged CSP) and silent uninstall; portable launch created `Mindtrace Data` beside the exe. 1.1.0 artifacts are rebuilt from the current source. GitHub Actions and the release workflow are present, but no remote exists in this workspace so no GitHub release has been published. |
+| 10. 1.1 experience upgrade | ✅ | Home screen with project creation before the editor; built-in and custom templates (save, instantiate, delete); fully Russian UI with a scalable dictionary; Photoshop-style contextual tool options with independent per-tool settings, reset and remappable single-key tool shortcuts; visual colour editor (palette, hue, HEX, alpha); movable and hideable panels with saved layout; rebuilt export dialog (PNG/JPG/WebP/PDF, presets, manual size, aspect lock, transparency, preview); native dialogs follow the interface language. |
 
 ## Verified checks
 
-Run `npm test` (26 tests) and `npm run e2e` (33 assertions). The current E2E output includes:
+Run `npm test` (26 tests), `npm run e2e` (39 assertions) and `npm run e2e:ui` (16 assertions). The current E2E output includes:
 
+- home screen appears on launch and resumes the current project;
 - demo board and titlebar load;
 - note creation by double-click;
 - card drag + undo;
@@ -32,11 +34,14 @@ Run `npm test` (26 tests) and `npm run e2e` (33 assertions). The current E2E out
 - DOCX dropped and converted by Mammoth;
 - autosave writes project JSON and assets;
 - manual snapshot on disk;
+- custom template saved to disk, instantiated, listed and removed;
 - project `.mndtr` export contains project + assets;
 - project import creates a new project with rewired asset URLs;
 - native PNG export through the Electron save dialog;
 - restart preserves the board;
 - no uncaught renderer errors.
+
+The UI smoke test additionally covers thread hit-testing, Russian settings navigation, live theme switching, Focus/Overview modes, context menus, Russian filter UI, resize handles and custom pins. Browser checks covered the home screen, project manager, create-project dialog, per-tool option bars for every tool, the colour popover, the export dialog and live Russian/English switching (`scripts/check-i18n.cjs` reports 0 missing keys).
 
 `npm run typecheck` passes for main, preload and renderer. `npm run build` succeeds.
 
@@ -44,17 +49,18 @@ Run `npm test` (26 tests) and `npm run e2e` (33 assertions). The current E2E out
 
 The packaging configuration targets Windows x64. It has been executed locally:
 
-- `release/Mindtrace-Setup-1.0.0.exe` — NSIS installer with install-directory selection, desktop shortcut, run-after-finish, uninstall entry.
-- `release/Mindtrace-Portable-1.0.0.exe` — portable executable.
+- `release/Mindtrace-Setup-1.1.0.exe` — NSIS installer with install-directory selection, desktop shortcut, run-after-finish, uninstall entry.
+- `release/Mindtrace-Portable-1.1.0.exe` — portable executable.
 - `release/win-unpacked/` — unpacked build used for smoke testing.
-- `release/Mindtrace-Setup-1.0.0.exe.blockmap` — update/block map artifact.
+- `release/Mindtrace-Setup-1.1.0.exe.blockmap` — update/block map artifact.
 
-Verification performed:
+Verification performed for 1.1.0:
 
 - Installer silent install into a temporary directory produced `Mindtrace.exe` and `Uninstall Mindtrace.exe`.
-- The installed executable launched successfully, rendered the demo board, ran search, and rendered a dropped PDF with PDF.js under the packaged CSP, with no renderer errors.
+- The installed executable launched successfully and passed `scripts/packaged-smoke.mjs`: Russian demo board (9 cards, 7 threads), search, a dropped PDF rendered by PDF.js under the packaged CSP, local data file written, and no renderer errors.
+- The same smoke test passed against `release/win-unpacked/Mindtrace.exe`.
 - `Uninstall Mindtrace.exe /S` removed the application files.
-- The portable executable launched, extracted to a temporary location and stored its data in `Mindtrace Data` beside the portable exe.
+- The portable executable launched and created `Mindtrace Data` (projects, templates, settings, session) beside the executable.
 - Code signing is **not** configured, so Windows SmartScreen may warn. Signing certificates must be supplied by the publisher.
 
 ## Known limitations / honest gaps

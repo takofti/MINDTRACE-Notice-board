@@ -27,6 +27,7 @@ import LodLabels from './LodLabels'
 import Minimap from './Minimap'
 import ZoomBar from './ZoomBar'
 import ToolOptionsBar from './ToolOptionsBar'
+import { t } from '@/i18n'
 
 const EMPTY_PINS = new Map<string, string[]>()
 
@@ -1527,13 +1528,13 @@ export default function Board(): React.JSX.Element | null {
           {tool === 'eraser' ? (
             <>
               <span>{t('Erase chalk, marker and pencil')}</span>
-              <kbd>Esc</kbd>
+              <kbd>{t("Esc")}</kbd>
               <span>{t('to deselect')}</span>
             </>
           ) : tool !== 'select' && tool !== 'hand' ? (
             <>
               <span>{t('Drawing — drag on the board')}</span>
-              <kbd>Esc</kbd>
+              <kbd>{t("Esc")}</kbd>
               <span>{t('returns to select')}</span>
             </>
           ) : mode === 'focus' ? (

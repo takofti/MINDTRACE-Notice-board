@@ -13,6 +13,7 @@ import {
   exportSpaceToPdf,
   type ExportOptions
 } from '@/services/exporter'
+import { t } from '@/i18n'
 
 type ImageFormat = 'png' | 'jpg' | 'webp'
 
@@ -188,7 +189,7 @@ export default function ExportDialog(): React.JSX.Element | null {
         setMessage(t('Export cancelled'))
         return
       }
-      if (!saved.ok) throw new Error(saved.error ?? 'Could not save image')
+      if (!saved.ok) throw new Error(t(saved.error ?? 'Could not save image'))
       update('data', {
         exportFormat: format,
         exportQuality: quality,
@@ -223,7 +224,7 @@ export default function ExportDialog(): React.JSX.Element | null {
       const baseName = safeFileBase(fileName)
       const saved = await savePdf(bytes.buffer as ArrayBuffer, `${baseName}.pdf`)
       if (saved.canceled) return
-      if (!saved.ok) throw new Error(saved.error ?? 'Could not save PDF')
+      if (!saved.ok) throw new Error(t(saved.error ?? 'Could not save PDF'))
       setLastFile(saved.path ?? `${baseName}.pdf`)
       toast(`${t('PDF exported')}`, 'success')
     } catch (error) {
@@ -239,7 +240,7 @@ export default function ExportDialog(): React.JSX.Element | null {
       await saveNowAndFlush()
       const result = await exportProjectToDisk(project.id)
       if (result.canceled) return
-      if (!result.ok) throw new Error(result.error ?? 'Could not export project')
+      if (!result.ok) throw new Error(t(result.error ?? 'Could not export project'))
       toast(t('Project archive exported'), 'success')
       if (result.path) setLastFile(result.path)
     } catch (error) {
@@ -280,8 +281,7 @@ export default function ExportDialog(): React.JSX.Element | null {
               </div>
               <div className="export-preview-meta">
                 <span>
-                  {t('Preview')} · {width} × {height} px
-                </span>
+                  {t('Preview')} · {width} × {height} {t("px")}{' '}</span>
                 <span>{format.toUpperCase()}{format !== 'png' ? ` · ${Math.round(quality * 100)}%` : ''}</span>
               </div>
               {previewError && <div className="warning-box danger-box">{previewError}</div>}

@@ -10,6 +10,7 @@ import type {
   Thread
 } from '@shared/types'
 import { PROJECT_FORMAT_VERSION } from '@shared/types'
+import { tNow } from '@/i18n'
 import type { AppSettings } from '@shared/settings'
 import { uid } from './id'
 
@@ -42,13 +43,15 @@ export const THREAD_PALETTE = [
 export const NOTE_PALETTE = ['#e8c56a', '#e7a4b2', '#a9cbb6', '#9fbfdc', '#d8cfc0', '#d8a77a']
 export const LABEL_PALETTE = ['#b33a3a', '#c99a3d', '#5b8db8', '#6e9c73', '#a06aa8', '#8a8f98']
 
-export const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'cat_important', name: 'Important', color: '#c8553d' },
-  { id: 'cat_ideas', name: 'Ideas', color: '#c99a3d' },
-  { id: 'cat_questions', name: 'Questions', color: '#5b8db8' },
-  { id: 'cat_verify', name: 'Verify', color: '#6e9c73' },
-  { id: 'cat_done', name: 'Done', color: '#8a8f98' }
-]
+export function defaultCategories(): Category[] {
+  return [
+    { id: 'cat_important', name: tNow('Important'), color: '#c8553d' },
+    { id: 'cat_ideas', name: tNow('Ideas'), color: '#c99a3d' },
+    { id: 'cat_questions', name: tNow('Questions'), color: '#5b8db8' },
+    { id: 'cat_verify', name: tNow('Verify'), color: '#6e9c73' },
+    { id: 'cat_done', name: tNow('Done'), color: '#8a8f98' }
+  ]
+}
 
 export function newSpace(name: string, camera = { x: 0, y: 0, zoom: 1 }): Space {
   const now = Date.now()
@@ -66,8 +69,8 @@ export function newSpace(name: string, camera = { x: 0, y: 0, zoom: 1 }): Space 
   }
 }
 
-export function newProject(name = 'Untitled project'): Project {
-  const space = newSpace('Board 01')
+export function newProject(name = tNow('Untitled project')): Project {
+  const space = newSpace(tNow('Board 01'))
   const now = Date.now()
   return {
     format: PROJECT_FORMAT_VERSION,
@@ -78,7 +81,7 @@ export function newProject(name = 'Untitled project'): Project {
     updatedAt: now,
     activeSpaceId: space.id,
     spaces: [space],
-    categories: structuredClone(DEFAULT_CATEGORIES)
+    categories: defaultCategories()
   }
 }
 

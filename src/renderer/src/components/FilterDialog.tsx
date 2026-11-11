@@ -4,6 +4,7 @@ import { useBoard, useActiveSpace, cardMatchesFilter } from '@/store/board'
 import { useUi } from '@/store/ui'
 import { useSettings } from '@/store/settings'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 const KIND_OPTIONS: { id: CardKind; label: string }[] = [
   { id: 'text', label: 'Text' },
@@ -62,7 +63,7 @@ export default function FilterDialog(): React.JSX.Element | null {
 
   return (
     <div className="overlay" onPointerDown={(event) => event.target === event.currentTarget && close()}>
-      <div className="dialog filter-dialog" role="dialog" aria-modal="true" aria-label="Filter cards">
+      <div className="dialog filter-dialog" role="dialog" aria-modal="true" aria-label={t("Filter cards")}>
         <div className="dialog-head">
           <div className="head-icon">
             <Filter size={16} />
@@ -71,7 +72,7 @@ export default function FilterDialog(): React.JSX.Element | null {
             <h2>{t('Filter this board')}</h2>
             <p>{t('Filtered cards keep their position. Nothing is moved or deleted.')}</p>
           </div>
-          <button className="icon-btn close-btn" onClick={close} title="Close">
+          <button className="icon-btn close-btn" onClick={close} title={t("Close")}>
             <X size={15} />
           </button>
         </div>
@@ -135,7 +136,7 @@ export default function FilterDialog(): React.JSX.Element | null {
             <button
               className={`toggle ${showHidden ? 'is-on' : ''}`}
               onClick={() => setShowHidden(!showHidden)}
-              aria-label="Show hidden cards"
+              aria-label={t("Show hidden cards")}
             />
           </div>
 
@@ -147,7 +148,7 @@ export default function FilterDialog(): React.JSX.Element | null {
             <button
               className={`toggle ${showMinimap ? 'is-on' : ''}`}
               onClick={() => useSettings.getState().update('board', { showMinimap: !showMinimap })}
-              aria-label="Show minimap"
+              aria-label={t("Show minimap")}
             />
           </div>
 

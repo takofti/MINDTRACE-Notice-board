@@ -27,7 +27,8 @@ The first launch of a fresh data folder seeds the demonstration project. All des
 | `npm run typecheck` | `tsc` for main/preload and renderer |
 | `npm test` | Vitest unit tests |
 | `npm run e2e` | Build, then run the Playwright-driven Electron smoke test |
-| `node scripts/ui-e2e.mjs` | Real Electron UI checks: settings/theme, modes, filters, context menu, resize, pins, thread selection |
+| `npm run e2e:ui` | Build, then run the Electron UI checks: settings/theme, modes, filters, context menu, resize, pins, thread selection |
+| `node scripts/check-i18n.cjs` | Report missing Russian dictionary keys |
 | `node scripts/packaged-smoke.mjs` | Launch a packaged build and verify board, search and PDF rendering under the packaged CSP |
 | `npm run build` | Production bundles in `out/` |
 | `npm run dist` | Build + electron-builder NSIS installer and portable exe |
@@ -42,17 +43,25 @@ src/preload/index.ts     typed window.mindtrace bridge
 src/shared/              project/data types and settings schema
 src/renderer/src/
   App.tsx                boot, shell, autosave and close-flush wiring
+  components/HomeScreen.tsx         launch screen, recent projects, templates
+  components/CreateProjectDialog    project creation with built-in templates
   components/Board.tsx   viewport, gestures, draws layers, drop import
   components/CardView    card types, pins, rich text, media and documents
+  components/ToolOptionsBar.tsx     contextual per-tool settings
+  components/ColorField.tsx         palette/hue/HEX/alpha colour editor
+  components/ExportDialog.tsx       preview, formats, dimensions
   components/ThreadsLayer / StrokesLayer / GroupLayer / Minimap
+  i18n/index.ts          Russian dictionary, translate/useT/t, locale helpers
   store/board.ts         normalized project state, selection, undo, clipboard
   store/settings.ts      settings + profiles + appearance application
   store/ui.ts            modals, context menu, toasts, interaction flag
-  core/                  geometry, camera, threads, stroke paths, migrations
+  core/                  geometry, camera, threads, stroke paths, templates, migrations
   services/              storage adapter, bootstrap/autosave, exporter, events
   hooks/                 hotkeys, asset URL resolution
   styles/global.css      visual system and board surface
 scripts/e2e.mjs          real Electron smoke test
+scripts/ui-e2e.mjs       real Electron UI checks
+scripts/check-i18n.cjs   i18n key coverage report
 scripts/make-icon.*      icon generation
 ```
 
@@ -70,11 +79,27 @@ No canvas engine changes should be necessary.
 
 ## Adding a drawing tool
 
-1. Extend `ToolId`/`Stroke['tool']`.
+1. Extend `ToolId`/`Stroke['tool']` and `TOOL_ACTIONS` in `src/shared/settings.ts`.
 2. Add the rail button in `ToolRail.tsx`.
 3. Handle its gesture in `Board.startDrawing`/preview completion.
 4. Add a path branch in `core/strokes.ts` and a canvas branch in the exporter.
-5. Test eraser behaviour for the new tool.
+5. Add its contextual controls in `ToolOptionsBar.tsx` and defaults in settings.
+6. Test eraser behaviour for the new tool.
+
+## Localization
+
+- English source strings are dictionary keys; `src/renderer/src/i18n/index.ts` maps them to Russian.
+- Use `useT()` inside components (`const t = useT()`), and the global `t()` only for helpers, attributes or non-React modules.
+- Add new keys to `RU` at the bottom of the dictionary. `node scripts/check-i18n.cjs` lists missing keys and exits nonzero if any are missing.
+- Dates use `localeFor()`/`useLocale()` so Russian builds show Russian month names.
+- Native Electron dialogs use `dialogText(ru, en)` in `src/main/index.ts`, which reads the persisted language before showing the dialog.
+- Project content (card text, space names) is user data and is never retranslated. The built-in demo/starter projects are created in the language active at first launch.
+
+## Templates
+
+- Built-in templates are generated in `core/templates.ts`.
+- Custom templates are written by the main process to `data/templates/<id>/` (`template.json`, `project.json`, `assets/`).
+- `templates:save`, `templates:instantiate` and `templates:remove` are exposed through the preload bridge; instantiation rewrites `mtasset://` URLs to the new project id.
 
 ## Testing
 
@@ -86,6 +111,7 @@ No canvas engine changes should be necessary.
 
 `npm run e2e` builds the app and launches the real Electron binary with an isolated fresh data folder:
 
+- home screen appears and resumes the current project;
 - demo project loads;
 - double-click note, drag, undo;
 - tie a thread from a connected pin;
@@ -95,6 +121,7 @@ No canvas engine changes should be necessary.
 - drop a minimal DOCX and verify Mammoth converts its text;
 - autosave writes `project.json` + assets;
 - manual snapshot exists on disk;
+- custom template saves, instantiates, lists and removes;
 - project archive exports and re-imports with rewired assets;
 - close/relaunch preserves cards;
 - no renderer console/page errors.
@@ -134,6 +161,8 @@ await app.evaluate(({ dialog }, path) => {
 ## Known development notes
 
 - The browser harness cannot use `ResizeObserver` reliably in some embedded panes; the Board has an explicit layout measurement fallback (`getBoundingClientRect` + resize/timeout) for exactly this reason.
+- Zoom is applied with CSS `zoom` on `.board-zoom`; the outer `.board-world` only translates. Keep it that way so text and images stay crisp and CSS `var(--inv-zoom)` keeps screen-space sizing correct.
+- Moving or resizing a panel updates the persisted `ui` settings section; keep the layout reset button working when adding new panels.
 - `npm run dev:web` is for UI work only; it is not a shipped distribution target.
 - Video and PDF preview fidelity depends on Chromium's native media/PDF support.
 - Undo history is intentionally session-scoped. Use snapshots for durable recovery.

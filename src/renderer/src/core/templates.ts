@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from '@shared/settings'
 import { createDemoProject } from './demo'
 import { makeGroup, newCard, newProject, newThread } from './defaults'
 import { uid } from './id'
+import { tNow } from '@/i18n'
 
 export interface BuiltinTemplate {
   id: string
@@ -43,8 +44,8 @@ function planningSpace(): Space {
   const settings = DEFAULT_SETTINGS
   const space: Space = {
     id: uid('sp'),
-    name: 'Planning board',
-    description: 'Goals, milestones and risks',
+    name: tNow('Planning board'),
+    description: tNow('Goals, milestones and risks'),
     camera: { x: 0, y: 0, zoom: 0.86 },
     cards: {},
     threads: {},
@@ -56,9 +57,9 @@ function planningSpace(): Space {
   const goals = newCard('text', {
     at: { x: 0, y: 0 },
     settings,
-    title: 'Project goals',
+    title: tNow('Project goals'),
     body:
-      '<p>What does success look like? Write the outcome before the tasks.</p><p><strong>Primary goal:</strong> …</p>',
+      tNow('<p>What does success look like? Write the outcome before the tasks.</p><p><strong>Primary goal:</strong> …</p>'),
     categories: []
   })
   const milestones = newCard('note', {
@@ -66,19 +67,19 @@ function planningSpace(): Space {
     settings,
     color: '#a9cbb6',
     body:
-      '<p><strong>Milestones</strong></p><p>01 — discovery<br>02 — prototype<br>03 — review<br>04 — release</p>'
+      tNow('<p><strong>Milestones</strong></p><p>01 — discovery<br>02 — prototype<br>03 — review<br>04 — release</p>')
   })
   const risks = newCard('note', {
     at: { x: 430, y: 240 },
     settings,
     color: '#e7a4b2',
-    body: '<p><strong>Risks</strong></p><p>Scope creep. Unclear owner. Missing feedback loop.</p>'
+    body: tNow('<p><strong>Risks</strong></p><p>Scope creep. Unclear owner. Missing feedback loop.</p>')
   })
   const next = newCard('note', {
     at: { x: -20, y: 300 },
     settings,
     color: '#e8c56a',
-    body: '<p><strong>Next action</strong></p><p>Pick one measurable next step and finish it.</p>'
+    body: tNow('<p><strong>Next action</strong></p><p>Pick one measurable next step and finish it.</p>')
   })
   const cards = [goals, milestones, risks, next]
   cards.forEach((card, index) => (card.z = index + 1))
@@ -88,7 +89,7 @@ function planningSpace(): Space {
     [uid('thr')]: newThread({ cardId: goals.id, pinId: 'se' }, { cardId: risks.id, pinId: 'w' }, settings),
     [uid('thr')]: newThread({ cardId: goals.id, pinId: 's' }, { cardId: next.id, pinId: 'n' }, settings)
   }
-  const group = makeGroup('Overview', '#c99a3d')
+  const group = makeGroup(tNow('Overview'), '#c99a3d')
   for (const card of cards) card.groupId = group.id
   space.groups = { [group.id]: group }
   return space

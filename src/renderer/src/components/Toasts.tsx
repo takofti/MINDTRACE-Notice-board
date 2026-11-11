@@ -1,5 +1,6 @@
 import { AlertCircle, Check, Info, X } from 'lucide-react'
 import { useUi } from '@/store/ui'
+import { t } from '@/i18n'
 
 export default function Toasts(): React.JSX.Element | null {
   const toasts = useUi((state) => state.toasts)
@@ -19,7 +20,7 @@ export default function Toasts(): React.JSX.Element | null {
             )}
           </span>
           <span>{toast.message}</span>
-          <button onClick={() => dismiss(toast.id)} title="Dismiss">
+          <button onClick={() => dismiss(toast.id)} title={t("Dismiss")}>
             <X size={12} />
           </button>
         </div>

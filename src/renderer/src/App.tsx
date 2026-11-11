@@ -22,6 +22,7 @@ import Lightbox from '@/components/Lightbox'
 import Toasts from '@/components/Toasts'
 import HomeScreen from '@/components/HomeScreen'
 import CreateProjectDialog from '@/components/CreateProjectDialog'
+import { t } from '@/i18n'
 
 let bootPromise: ReturnType<typeof bootstrapApp> | null = null
 
@@ -56,7 +57,7 @@ export default function App(): React.JSX.Element {
       .then((result) => {
         if (!alive) return
         if (!result.ok) {
-          setError(result.error ?? 'The board could not be opened.')
+          setError(result.error ? t(result.error) : t('The board could not be opened.'))
           setPhase('error')
           return
         }
@@ -164,13 +165,12 @@ export default function App(): React.JSX.Element {
                     <AlertCircle size={17} />
                   </div>
                   <div className="recovery-text">
-                    <strong>Recovered after an unexpected close.</strong>
+                    <strong>{t("Recovered after an unexpected close.")}</strong>
                     <span>
                       {recoveryName
                         ? `“${recoveryName}” was restored from its last autosave.`
                         : 'Your last autosave was restored.'}{' '}
-                      Snapshots are available in Settings → Data.
-                    </span>
+                      {t("Snapshots are available in Settings → Data.")}{' '}</span>
                   </div>
                   <button
                     className="btn btn-ghost btn-sm"
@@ -179,11 +179,10 @@ export default function App(): React.JSX.Element {
                       setRecovery(false)
                     }}
                   >
-                    View snapshots
-                  </button>
+                    {t("View snapshots")}{' '}</button>
                   <button
                     className="icon-btn"
-                    title="Dismiss"
+                    title={t("Dismiss")}
                     onClick={() => setRecovery(false)}
                   >
                     <X size={15} />
@@ -219,14 +218,14 @@ function LoadingScreen(): React.JSX.Element {
       <div className="boot-brand">
         <span className="boot-mark">M</span>
         <div>
-          <div className="boot-wordmark">MINDTRACE</div>
-          <div className="boot-sub">Investigation workspace</div>
+          <div className="boot-wordmark">{t("MINDTRACE")}</div>
+          <div className="boot-sub">{t("Investigation workspace")}</div>
         </div>
       </div>
       <div className="boot-progress">
         <span />
       </div>
-      <p>Restoring threads, pins and chalk marks…</p>
+      <p>{t("Restoring threads, pins and chalk marks…")}</p>
     </div>
   )
 }
@@ -247,22 +246,18 @@ function ErrorScreen({
           <AlertCircle size={26} />
         </span>
         <div>
-          <div className="boot-wordmark">MINDTRACE</div>
-          <div className="boot-sub">The board did not open</div>
+          <div className="boot-wordmark">{t("MINDTRACE")}</div>
+          <div className="boot-sub">{t("The board did not open")}</div>
         </div>
       </div>
       <p className="boot-error-text">{message}</p>
       <p className="boot-hint">
-        Your project files are never overwritten without a backup. Open the data folder to inspect or
-        restore a snapshot.
-      </p>
+        {t("Your project files are never overwritten without a backup. Open the data folder to inspect or restore a snapshot.")}{' '}</p>
       <div className="boot-actions">
         <button className="btn btn-primary" onClick={onRetry}>
-          <RefreshCw size={15} /> Try again
-        </button>
+          <RefreshCw size={15} /> {t("Try again")}{' '}</button>
         <button className="btn" onClick={onFolder}>
-          <FolderOpen size={15} /> Open data folder
-        </button>
+          <FolderOpen size={15} /> {t("Open data folder")}{' '}</button>
       </div>
     </div>
   )

@@ -28,10 +28,12 @@ import {
   removeTemplate,
   saveProjectAsTemplate,
   windowControls,
-  importProjectFromDisk
+  importProjectFromDisk,
+  getAppInfo
 } from '@/services/storage'
 import { openProjectById, saveProjectNow } from '@/services/bootstrap'
 import { BUILTIN_TEMPLATES } from '@/core/templates'
+import { t } from '@/i18n'
 
 export default function HomeScreen(): React.JSX.Element | null {
   const open = useUi((state) => state.homeOpen)
@@ -42,6 +44,7 @@ export default function HomeScreen(): React.JSX.Element | null {
   const project = useBoard((state) => state.project)
   const modal = useUi((state) => state.modal)
   const t = useT()
+  const [version, setVersion] = useState('1.1.0')
   const locale = useLocale()
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
@@ -62,6 +65,7 @@ export default function HomeScreen(): React.JSX.Element | null {
     setTemplateForm(false)
     setTemplateName(project ? `${project.name}` : '')
     setTemplateDescription('')
+    void getAppInfo().then((info) => setVersion(info.version))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -96,7 +100,7 @@ export default function HomeScreen(): React.JSX.Element | null {
       await saveProjectNow()
       const result = await importProjectFromDisk()
       if (result.canceled) return
-      if (!result.ok || !result.project) throw new Error(result.error ?? 'Import failed')
+      if (!result.ok || !result.project) throw new Error(t(result.error ?? 'Import failed'))
       await openProjectById(result.project.id)
       await refresh()
       closeHome()
@@ -147,7 +151,7 @@ export default function HomeScreen(): React.JSX.Element | null {
         <div className="home-brand">
           <span className="brand-mark">M</span>
           <div>
-            <div className="home-wordmark">MINDTRACE</div>
+            <div className="home-wordmark">{t("MINDTRACE")}</div>
             <div className="home-tagline">{t('Infinite board · local files · no account')}</div>
           </div>
         </div>
@@ -175,7 +179,7 @@ export default function HomeScreen(): React.JSX.Element | null {
         <section className="home-hero">
           <div className="home-eyebrow">
             <span className="home-live-dot" />
-            {t('Home')} · 1.0.0
+            {t('Home')} · {version}
           </div>
           <h1>{t('A calm place to organize everything that matters.')}</h1>
           <p>{t('Create a project before entering the editor. Your work stays on this computer.')}</p>

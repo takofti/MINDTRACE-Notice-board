@@ -151,7 +151,7 @@ export default function ToolRail(): React.JSX.Element {
         disabled={!selection.cards.length}
         onClick={() => {
           const id = groupSelection()
-          if (id) toast('Cards grouped', 'success')
+          if (id) toast(t('Cards grouped'), 'success')
         }}
         title={t('Group selected cards (Ctrl+G)')}
         aria-label={t('Group selected cards (Ctrl+G)')}

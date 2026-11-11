@@ -4,6 +4,7 @@ import type { Space } from '@shared/types'
 import { useBoard } from '@/store/board'
 import { useUi } from '@/store/ui'
 import { groupBounds, groupMemberCards } from '@/core/geometry'
+import { t } from '@/i18n'
 
 interface GroupLayerProps {
   space: Space
@@ -127,7 +128,7 @@ export default function GroupLayer({ space, visibleCardIds, visibleGroupIds, foc
                     setDraft(group.title)
                     setRenaming(group.id)
                   }}
-                  title="Double-click to rename"
+                  title={t("Double-click to rename")}
                 >
                   {group.title}
                 </span>

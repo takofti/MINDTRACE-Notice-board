@@ -15,9 +15,11 @@ Mindtrace is built for investigations, research, study, project planning, code a
 - **Chalkboard** — chalk, marker, pencil, eraser (cuts strokes into pieces), line, arrow, rectangle and ellipse. Drawings move, lock, recolour and erase independently of cards.
 - **Spaces** — independent boards inside one project, each with its own camera, cards, threads and drawings. Objects can be copied between spaces.
 - **Organisation** — groups (move/collapse/recolour), categories, filters, full-project search, layer order, hiding, locking and connection-chain selection.
-- **Projects** — create, rename, duplicate, delete, export/import as a portable `.mndtr` archive, and export a space to high-resolution PNG or PDF.
+- **Projects** — a home screen opens before the editor; create, resume, rename, duplicate, delete, export/import as a portable `.mndtr` archive, and start from built-in or custom templates. Export a space to PNG, JPG, WebP or PDF.
+- **Tool system** — a contextual options bar for every tool (brush, chalk, marker, eraser, shapes, thread, text, note) with independent settings, live updates, per-tool reset and remappable single-key shortcuts. Colours are edited in a real palette/hue/HEX/alpha popover.
 - **Reliability** — autosave, atomic writes, rolling backups, manual snapshots, crash-session detection, undo/redo and a pre-close save flush.
 - **Deep settings** — board surface, textures, custom background image, grid, card/note/thread/pin/drawing defaults, themes, accent, density, motion, interaction behaviour, performance quality, data location, backups, keybindings, workspace profiles and per-section resets. Everything is applied live and persisted.
+- **Russian-first interface** — complete Russian UI with a scalable dictionary and English fallback; native dialogs follow the selected language. Panels can be moved, hidden and reset.
 
 ## Install (Windows 10/11)
 
@@ -76,7 +78,7 @@ Everything is local. Mindtrace does not use an account, telemetry or a server.
 
 ## Keyboard
 
-All shortcuts are remappable in **Settings → Interaction**.
+All shortcuts are remappable in **Settings → Interaction**; tool keys are remapped in **Settings → Tools**.
 
 | Action | Default |
 | --- | --- |
@@ -87,12 +89,15 @@ All shortcuts are remappable in **Settings → Interaction**.
 | Quick search | `Ctrl+K` |
 | Select all | `Ctrl+A` |
 | Group selected | `Ctrl+G` |
-| New note / text card | `N` / `T` |
+| Move / select | `V` |
+| Pan | `H` |
+| Sticky note / text | `N` / `T` |
+| Pencil / chalk / marker / eraser | `P` / `C` / `M` / `E` |
+| Rectangle / ellipse / line / arrow | `R` / `O` / `L` / `A` |
+| Thread / connection | `Y` |
 | Fit board / 100% zoom | `Ctrl+0` / `Ctrl+1` |
 | Save now | `Ctrl+S` |
 | Settings / export | `Ctrl+,` / `Ctrl+E` |
-| Pan | `Space` + drag or middle drag |
-| Zoom | Mouse wheel |
 | Add a pin anywhere | `Alt` + click card |
 | Connect | Hover a card → drag from a pin |
 
@@ -106,8 +111,9 @@ The current build has been verified with:
 
 - TypeScript checks for main, preload and renderer.
 - 26 unit tests covering geometry, camera, pins, eraser splitting, undo/redo, card/thread integrity, grouping, filtering, migration, chain focus, layer order and space duplication.
-- A real Electron smoke test that creates and drags a card, undoes the drag, ties a thread, draws chalk, imports an image through IPC, verifies the custom asset protocol, renders a dropped PDF with PDF.js and a dropped DOCX with Mammoth, writes and reloads the project, creates a snapshot, and exports/imports a complete project archive.
-- A UI smoke test for settings/theme switching, Focus/Overview modes, context menus, filters, thread hit-testing, resizing and custom pins.
+- A real Electron smoke test (39 assertions) that dismisses the home screen, creates and drags a card, undoes the drag, ties a thread, draws chalk, imports an image through IPC, verifies the custom asset protocol, renders a dropped PDF with PDF.js and a dropped DOCX with Mammoth, writes and reloads the project, creates a snapshot, saves/instantiates/removes a custom template, and exports/imports a complete project archive.
+- A UI smoke test (16 assertions) for Russian settings navigation, settings/theme switching, Focus/Overview modes, context menus, filters, thread hit-testing, resizing and custom pins.
+- Browser checks of the home screen, project manager, create-project dialog, every tool's options bar, the colour popover, the export preview and live Russian/English switching; `scripts/check-i18n.cjs` reports no missing keys.
 - A Windows NSIS installer and portable build, verified by silent install, installed-app launch (including PDF under the packaged CSP) and silent uninstall; the portable build was launched and checked for portable data. See [PROGRESS.md](PROGRESS.md).
 
 See [PROGRESS.md](PROGRESS.md) for an honest feature-by-feature status and known limitations.

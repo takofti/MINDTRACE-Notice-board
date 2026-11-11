@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { t } from '@/i18n'
 
 interface State {
   error: Error | null
@@ -26,27 +27,23 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, St
             <AlertTriangle size={25} />
           </span>
           <div>
-            <div className="boot-wordmark">MINDTRACE</div>
-            <div className="boot-sub">The interface hit a problem</div>
+            <div className="boot-wordmark">{t("MINDTRACE")}</div>
+            <div className="boot-sub">{t("The interface hit a problem")}</div>
           </div>
         </div>
         <p className="boot-error-text">{this.state.error.message}</p>
         <p className="boot-hint">
-          Your project is already saved on disk. Reload the interface; if the problem repeats, open the
-          data folder and keep a copy of the project file.
-        </p>
+          {t("Your project is already saved on disk. Reload the interface; if the problem repeats, open the data folder and keep a copy of the project file.")}{' '}</p>
         <div className="boot-actions">
           <button className="btn btn-primary" onClick={() => window.location.reload()}>
-            <RefreshCw size={14} /> Reload interface
-          </button>
+            <RefreshCw size={14} /> {t("Reload interface")}{' '}</button>
           <button
             className="btn"
             onClick={() => {
               this.setState({ error: null })
             }}
           >
-            Try to recover
-          </button>
+            {t("Try to recover")}{' '}</button>
         </div>
       </div>
     )

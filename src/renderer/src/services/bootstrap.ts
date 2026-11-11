@@ -16,6 +16,7 @@ import {
   type ImportedAsset
 } from '@/services/storage'
 import { buildBuiltinProject } from '@/core/templates'
+import { t } from '@/i18n'
 
 export interface BootstrapResult {
   ok: boolean
@@ -64,8 +65,8 @@ export function saveProjectNow(): Promise<void> {
         backups: useSettings.getState().settings.data.backups
       })
       if (!result.ok) {
-        state.setSaveState('error', undefined, result.error ?? 'Could not save project')
-        useUi.getState().toast(result.error ?? 'Could not save project', 'error')
+        state.setSaveState('error', undefined, result.error ? t(result.error) : t('Could not save project'))
+        useUi.getState().toast(result.error ? t(result.error) : t('Could not save project'), 'error')
       } else {
         state.setSaveState('saved', result.savedAt)
       }
@@ -120,7 +121,7 @@ export async function bootstrapApp(): Promise<BootstrapResult> {
     projects.find((project) => project.id === projects[0].id) ??
     projects[0]
   if (!target) {
-    return { ok: false, uncleanShutdown: info.uncleanShutdown, error: 'No projects available' }
+    return { ok: false, uncleanShutdown: info.uncleanShutdown, error: t('No projects available') }
   }
 
   try {

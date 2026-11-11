@@ -28,6 +28,18 @@ function check(name, condition, extra = '') {
   }
 }
 
+async function dismissHome(page) {
+  const home = page.locator('.home-screen')
+  if (!(await home.count())) return
+  const resume = home.getByRole('button', { name: /Продолжить/ }).first()
+  if (await resume.count()) {
+    await resume.click()
+  } else {
+    await page.keyboard.press('Escape')
+  }
+  await page.waitForFunction(() => !document.querySelector('.home-screen'), null, { timeout: 15000 })
+}
+
 async function launch() {
   const app = await electron.launch({
     executablePath: electronExe,
@@ -41,8 +53,10 @@ async function launch() {
     if (message.type() === 'error') logs.push(`console: ${message.text()}`)
   })
   await page.waitForSelector('.board', { timeout: 20000 })
+  const hadHome = (await page.locator('.home-screen').count()) > 0
+  await dismissHome(page)
   await page.waitForFunction(() => document.querySelectorAll('.card').length > 0, null, { timeout: 20000 })
-  return { app, page }
+  return { app, page, hadHome }
 }
 
 function projectFiles(dir) {
@@ -130,8 +144,9 @@ docxZip.file(
 const pdfB64 = makePdf()
 const docxB64 = (await docxZip.generateAsync({ type: 'nodebuffer' })).toString('base64')
 
-let { app, page } = await launch()
+let { app, page, hadHome } = await launch()
 const initialCards = await page.locator('.card').count()
+check('home screen appears on launch', hadHome)
 check('demo board loads', initialCards >= 9, `cards=${initialCards}`)
 check('titlebar rendered', (await page.locator('.titlebar').count()) === 1)
 await page.screenshot({ path: join(artifacts, 'e2e-01-board.png') })
@@ -233,7 +248,7 @@ if (pinInfo) {
 }
 
 // Draw charcoal on an empty spot.
-await page.locator('.tool-btn[title="Chalk"]').click()
+await page.locator('.tool-btn[title^="Мел"]').click()
 const strokeCountBefore = await page.locator('.stroke-hit').count()
 const drawPoint = await page.evaluate(() => {
   const board = document.querySelector('.board')
@@ -264,7 +279,7 @@ if (drawPoint) {
   const strokeCountAfter = await page.locator('.stroke-hit').count()
   check('chalk drawing is added', strokeCountAfter === strokeCountBefore + 1, `${strokeCountBefore} -> ${strokeCountAfter}`)
 }
-await page.locator('.tool-btn[title="Select & move (V)"]').click()
+await page.locator('.tool-btn[title^="Выбор и перемещение"]').click()
 
 // Drop a small generated image through the real asset pipeline.
 const imageImport = await page.evaluate(async () => {
@@ -374,6 +389,29 @@ if (saved) {
   check('snapshot file exists on disk', existsSync(backups) && readdirSync(backups).length > 0)
 }
 
+// Custom templates: save the current project, instantiate and remove it.
+if (saved) {
+  const template = await page.evaluate(async (id) => {
+    return window.mindtrace.templates.save(id, 'E2E template', 'Saved by the smoke test')
+  }, saved.project.id)
+  check('custom template is saved', Boolean(template?.id), JSON.stringify(template ?? null))
+  const templateDir = join(userData, 'data', 'templates', template.id)
+  check('custom template is written to disk', existsSync(join(templateDir, 'template.json')))
+  const instantiated = await page.evaluate(async (id) => {
+    return window.mindtrace.templates.instantiate(id, 'E2E instantiated')
+  }, template.id)
+  check(
+    'custom template instantiates a project',
+    instantiated?.name === 'E2E instantiated' && instantiated.spaces.length >= 1,
+    JSON.stringify({ name: instantiated?.name, spaces: instantiated?.spaces?.length })
+  )
+  const templateList = await page.evaluate(async () => window.mindtrace.templates.list())
+  check('custom template is listed', templateList.some((item) => item.id === template.id))
+  await page.evaluate(async (id) => window.mindtrace.templates.remove(id), template.id)
+  const remaining = await page.evaluate(async () => window.mindtrace.templates.list())
+  check('custom template is removed', !remaining.some((item) => item.id === template.id))
+}
+
 // Export the whole project archive through the native save dialog.
 const exportPath = join(artifacts, 'e2e-project.mndtr')
 await app.evaluate(({ dialog }, filePath) => {
@@ -381,7 +419,7 @@ await app.evaluate(({ dialog }, filePath) => {
 }, exportPath)
 await page.locator('.project-button').click()
 await page.waitForSelector('.projects-dialog')
-await page.getByRole('button', { name: 'Export .mndtr' }).click()
+await page.getByRole('button', { name: 'Экспорт .mndtr' }).click()
 for (let i = 0; i < 40 && !existsSync(exportPath); i++) await page.waitForTimeout(100)
 check('project archive is exported', existsSync(exportPath), exportPath)
 if (existsSync(exportPath)) {
@@ -394,7 +432,7 @@ const projectsBeforeImport = await page.evaluate(() => window.mindtrace.projects
 await app.evaluate(({ dialog }, filePath) => {
   dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [filePath] })
 }, exportPath)
-await page.getByRole('button', { name: 'Import project' }).click()
+await page.getByRole('button', { name: 'Импорт .mndtr' }).click()
 await page.waitForFunction(() => !document.querySelector('.projects-dialog'), null, { timeout: 15000 })
 await page.waitForSelector('.board')
 await page.waitForTimeout(800)
@@ -418,9 +456,9 @@ if (existsSync(pngPath)) rmSync(pngPath, { force: true })
 await app.evaluate(({ dialog }, filePath) => {
   dialog.showSaveDialog = async () => ({ canceled: false, filePath })
 }, pngPath)
-await page.locator('.icon-btn[title^="Export board"]').click()
+await page.locator('.icon-btn[title^="Экспорт доски"]').click()
 await page.waitForSelector('.export-dialog')
-await page.getByRole('button', { name: 'Export PNG' }).click()
+await page.getByRole('button', { name: 'Экспорт PNG' }).click()
 for (let i = 0; i < 80 && !existsSync(pngPath); i++) await page.waitForTimeout(150)
 check('native PNG export produces a file', existsSync(pngPath), pngPath)
 if (existsSync(pngPath)) {

@@ -31,6 +31,12 @@ page.on('console', (m) => {
   if (m.type() === 'error') logs.push(m.text())
 })
 await page.waitForSelector('.board', { timeout: 20000 })
+const homeScreen = page.locator('.home-screen')
+if (await homeScreen.count()) {
+  const resume = homeScreen.getByRole('button', { name: /Продолжить/ }).first()
+  if (await resume.count()) await resume.click()
+  await page.waitForFunction(() => !document.querySelector('.home-screen'), null, { timeout: 15000 })
+}
 await page.waitForFunction(() => document.querySelectorAll('.card').length > 5)
 await page.screenshot({ path: join(artifacts, 'ui-01-board.png') })
 
@@ -56,7 +62,7 @@ if (threadPoint) {
   await page.waitForTimeout(200)
   const threadSelected = await page.evaluate(() => {
     const title = document.querySelector('.inspector .inspector-kicker')?.textContent ?? ''
-    return title === 'CONNECTION'
+    return title === 'СОЕДИНЕНИЕ'
   })
   check('clicking a thread selects it', threadSelected, JSON.stringify(threadPoint))
   await page.keyboard.press('Escape')
@@ -65,14 +71,14 @@ if (threadPoint) {
 }
 
 // Settings
-await page.locator('.icon-btn[title^="Settings"]').click()
+await page.locator('.icon-btn[title^="Настройки"]').click()
 await page.waitForSelector('.settings-dialog')
 check('settings opens', true)
 const navLabels = await page.locator('.settings-nav button').allInnerTexts()
-check('settings categories are present', navLabels.some((text) => text.includes('Board surface')) && navLabels.some((text) => text.includes('Data & backups')))
+check('settings categories are present', navLabels.some((text) => text.includes('Поверхность доски')) && navLabels.some((text) => text.includes('Данные и резервные копии')))
 await page.screenshot({ path: join(artifacts, 'ui-02-settings.png') })
 
-await page.locator('.settings-nav button', { hasText: 'Interface' }).click()
+await page.locator('.settings-nav button', { hasText: 'Интерфейс' }).click()
 await page.waitForTimeout(100)
 const hasThemeSelect = await page.evaluate(() => {
   const selects = [...document.querySelectorAll('.settings-content select')]
@@ -109,19 +115,19 @@ const cardCount = await page.locator('.card').count()
 await page.locator('.card.kind-note').first().click()
 await page.waitForTimeout(250)
 const modeButtons = await page.locator('.mode-switch button').allInnerTexts()
-check('mode switch exposes three modes', modeButtons.join(' ').includes('Board') && modeButtons.join(' ').includes('Focus') && modeButtons.join(' ').includes('Overview'), modeButtons.join(','))
-await page.getByRole('button', { name: 'Focus', exact: true }).click()
+check('mode switch exposes three modes', modeButtons.join(' ').includes('Доска') && modeButtons.join(' ').includes('Фокус') && modeButtons.join(' ').includes('Обзор'), modeButtons.join(','))
+await page.getByRole('button', { name: 'Фокус', exact: true }).click()
 await page.waitForTimeout(350)
 const dimmed = await page.locator('.card.is-dimmed').count()
 check('focus mode dims unrelated cards', dimmed > 0, `dimmed=${dimmed}`)
 await page.screenshot({ path: join(artifacts, 'ui-04-focus.png') })
-await page.getByRole('button', { name: 'Overview', exact: true }).click()
+await page.getByRole('button', { name: 'Обзор', exact: true }).click()
 await page.waitForTimeout(350)
 check('overview mode simplifies rendering', (await page.locator('.board').getAttribute('data-lod')) === 'on')
 const labels = await page.locator('.lod-label').count()
 check('overview shows readable labels', labels > 0, `labels=${labels}`)
 await page.screenshot({ path: join(artifacts, 'ui-05-overview.png') })
-await page.getByRole('button', { name: 'Board', exact: true }).click()
+await page.getByRole('button', { name: 'Доска', exact: true }).click()
 await page.waitForTimeout(200)
 
 // Context menu
@@ -133,15 +139,15 @@ await page.waitForFunction(() => !document.querySelector('.context-menu'))
 
 // Filter
 const beforeFilter = await page.locator('.card').count()
-await page.locator('.icon-btn[title*="Filter"]').click()
+await page.locator('.icon-btn[title*="Фильтр"]').click()
 await page.waitForSelector('.filter-dialog')
-const filterInput = page.locator('.filter-dialog input[placeholder*="Search this board"]')
-await filterInput.fill('emerald')
+const filterInput = page.locator('.filter-dialog input[placeholder*="Поиск по доске"]')
+await filterInput.fill('изумруд')
 await page.waitForTimeout(300)
 const afterFilter = await page.locator('.card').count()
 check('filter hides non-matching cards', afterFilter < beforeFilter, `${beforeFilter} -> ${afterFilter}`)
 await page.screenshot({ path: join(artifacts, 'ui-06-filter.png') })
-await page.getByRole('button', { name: 'Clear filters' }).click()
+await page.getByRole('button', { name: 'Сбросить фильтры' }).click()
 await page.waitForTimeout(200)
 await page.locator('.filter-dialog .btn-primary').click()
 await page.waitForTimeout(200)

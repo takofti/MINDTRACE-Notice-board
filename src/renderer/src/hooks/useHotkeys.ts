@@ -6,6 +6,7 @@ import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 import { saveProjectNow } from '@/services/bootstrap'
+import { t } from '@/i18n'
 
 const SHAPE_CYCLE: ShapeKind[] = ['rect', 'ellipse', 'line', 'arrow']
 
@@ -151,14 +152,14 @@ export function useHotkeys(): void {
       if (matches('copy')) {
         event.preventDefault()
         const count = board.copySelection()
-        if (count) ui.toast(`Copied ${count} object${count === 1 ? '' : 's'}`, 'success', 1600)
-        else ui.toast('Select cards or drawings to copy', 'info', 1600)
+        if (count) ui.toast(t(count === 1 ? 'Copied {count} object' : 'Copied {count} objects', { count }), 'success', 1600)
+        else ui.toast(t('Select cards or drawings to copy'), 'info', 1600)
         return
       }
       if (matches('paste')) {
         event.preventDefault()
         if (board.clipboard) emitBoardEvent(BOARD_EVENTS.paste)
-        else ui.toast('Clipboard is empty', 'info', 1600)
+        else ui.toast(t('Clipboard is empty'), 'info', 1600)
         return
       }
       if (matches('duplicate')) {
@@ -180,7 +181,7 @@ export function useHotkeys(): void {
         event.preventDefault()
         if (board.selection.cards.length) {
           board.groupSelection()
-          ui.toast('Cards grouped', 'success', 1400)
+          ui.toast(t('Cards grouped'), 'success', 1400)
         }
         return
       }
@@ -215,9 +216,9 @@ export function useHotkeys(): void {
         void saveProjectNow().then(() => {
           const state = useBoard.getState()
           if (state.saveState === 'error') {
-            useUi.getState().toast(state.saveError ?? 'Could not save project', 'error', 4000)
+            useUi.getState().toast(state.saveError ?? t('Could not save project'), 'error', 4000)
           } else {
-            useUi.getState().toast('Project saved', 'success', 1400)
+            useUi.getState().toast(t('Project saved'), 'success', 1400)
           }
         })
         return
@@ -225,7 +226,7 @@ export function useHotkeys(): void {
       if (matches('toggleGrid')) {
         event.preventDefault()
         useSettings.getState().update('ui', { showGridByDefault: !settings.ui.showGridByDefault })
-        ui.toast(settings.ui.showGridByDefault ? 'Grid hidden' : 'Grid shown', 'info', 1200)
+        ui.toast(settings.ui.showGridByDefault ? t('Grid hidden') : t('Grid shown'), 'info', 1200)
         return
       }
       if (matches('toggleMinimap')) {

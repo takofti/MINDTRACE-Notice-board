@@ -31,6 +31,7 @@ import { useUi } from '@/store/ui'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 import { createSnapshot } from '@/services/storage'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 export default function ContextMenu(): React.JSX.Element | null {
   const target = useUi((state) => state.contextMenu)
@@ -98,12 +99,12 @@ export default function ContextMenu(): React.JSX.Element | null {
     const nx = Math.min(1, Math.max(0, (target.world.x - card.x) / card.w))
     const ny = Math.min(1, Math.max(0, (target.world.y - card.y) / card.h))
     const pin = board.addPin(card.id, nx, ny)
-    if (pin) toast('Pin added. Drag from it to tie a thread.', 'success', 2400)
+    if (pin) toast(t('Pin added. Drag from it to tie a thread.'), 'success', 2400)
   }
 
   const deleteSpace = (id: string, name: string): void => {
     if (!project || project.spaces.length <= 1) {
-      toast('A project needs at least one space.', 'info')
+      toast(t('A project needs at least one space.'), 'info')
       return
     }
     ask({
@@ -309,8 +310,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <div className="context-sep" />
           <div className="context-label" style={{ lineHeight: 1.5 }}>
-            Select the thread to edit its label, width, curve and opacity in the inspector.
-          </div>
+            {t("Select the thread to edit its label, width, curve and opacity in the inspector.")}{' '}</div>
         </>
       )}
 

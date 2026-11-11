@@ -25,8 +25,11 @@ import {
 } from '@/services/storage'
 import { createStarterProject, openProjectById, saveProjectNow } from '@/services/bootstrap'
 import { formatDate } from '@/core/geometry'
+import { useT, useLocale } from '@/i18n'
 
 export default function ProjectsDialog(): React.JSX.Element | null {
+  const t = useT()
+  const locale = useLocale()
   const modal = useUi((state) => state.modal)
   const close = useUi((state) => state.closeModal)
   const toast = useUi((state) => state.toast)
@@ -79,7 +82,7 @@ export default function ProjectsDialog(): React.JSX.Element | null {
       await saveProjectNow()
       await openProjectById(id)
       close()
-      toast('Project opened', 'success', 1600)
+      toast(t('Project opened'), 'success', 1600)
     } catch (error) {
       toast((error as Error).message, 'error', 4500)
     } finally {
@@ -88,7 +91,7 @@ export default function ProjectsDialog(): React.JSX.Element | null {
   }
 
   const createNew = async (): Promise<void> => {
-    const title = name.trim() || 'Untitled project'
+    const title = name.trim() || t('Untitled project')
     setBusy(true)
     try {
       await saveProjectNow()
@@ -96,7 +99,7 @@ export default function ProjectsDialog(): React.JSX.Element | null {
       setName('')
       setNewDescription('')
       close()
-      toast('New project created', 'success', 1600)
+      toast(t('New project created'), 'success', 1600)
     } catch (error) {
       toast((error as Error).message, 'error', 4500)
     } finally {
@@ -115,7 +118,7 @@ export default function ProjectsDialog(): React.JSX.Element | null {
         await saveProjectNow()
       }
       await refresh(active.id)
-      toast('Project renamed', 'success', 1500)
+      toast(t('Project renamed'), 'success', 1500)
     } catch (error) {
       toast((error as Error).message, 'error')
     } finally {
@@ -130,7 +133,7 @@ export default function ProjectsDialog(): React.JSX.Element | null {
       if (isCurrent) await saveProjectNow()
       const copy = await duplicateProjectOnDisk(active.id)
       await refresh(copy.id)
-      toast('Project duplicated', 'success', 1600)
+      toast(t('Project duplicated'), 'success', 1600)
     } catch (error) {
       toast((error as Error).message, 'error')
     } finally {
@@ -141,9 +144,12 @@ export default function ProjectsDialog(): React.JSX.Element | null {
   const remove = async (): Promise<void> => {
     if (!active) return
     ask({
-      title: 'Delete this project?',
-      message: `“${active.name}” and all of its assets will be deleted from disk.\n\nThis cannot be undone from inside Mindtrace. Export the project first if you may need it again.`,
-      confirmLabel: 'Delete project',
+      title: t('Delete this project?'),
+      message: t(
+        '“{name}” and all of its assets will be deleted from disk. This cannot be undone from inside Mindtrace. Export the project first if you may need it again.',
+        { name: active.name }
+      ),
+      confirmLabel: t('Delete project'),
       danger: true,
       action: async () => {
         setBusy(true)
@@ -151,12 +157,12 @@ export default function ProjectsDialog(): React.JSX.Element | null {
           await deleteProjectOnDisk(active.id)
           const remaining = (await listProjects()).filter((item) => item.id !== active.id)
           if (remaining.length === 0) {
-            await createStarterProject('Untitled project')
+            await createStarterProject(t('Untitled project'))
           } else if (active.id === project?.id) {
             await openProjectById(remaining[0].id)
           }
           await refresh(remaining[0]?.id)
-          toast('Project deleted', 'success', 1600)
+          toast(t('Project deleted'), 'success', 1600)
         } finally {
           setBusy(false)
         }
@@ -173,12 +179,12 @@ export default function ProjectsDialog(): React.JSX.Element | null {
       }
       const result = await importProjectFromDisk()
       if (result.canceled) return
-      if (!result.ok || !result.project) throw new Error(result.error ?? 'Import failed')
+      if (!result.ok || !result.project) throw new Error(t(result.error ?? 'Import failed'))
       await saveProjectNow()
       await openProjectById(result.project.id)
       await refresh(result.project.id)
       close()
-      toast('Project imported', 'success', 1900)
+      toast(t('Project imported'), 'success', 1900)
     } catch (error) {
       toast((error as Error).message, 'error', 5000)
     } finally {
@@ -193,8 +199,8 @@ export default function ProjectsDialog(): React.JSX.Element | null {
       if (isCurrent) await saveProjectNow()
       const result = await exportProjectToDisk(active.id)
       if (result.canceled) return
-      if (!result.ok) throw new Error(result.error ?? 'Export failed')
-      toast(result.path ? `Exported to ${result.path}` : 'Project exported', 'success', 3500)
+      if (!result.ok) throw new Error(t(result.error ?? 'Export failed'))
+      toast(result.path ? t('Saved to {path}', { path: result.path }) : t('Project exported'), 'success', 3500)
     } catch (error) {
       toast((error as Error).message, 'error', 5000)
     } finally {
@@ -211,16 +217,16 @@ export default function ProjectsDialog(): React.JSX.Element | null {
 
   return (
     <div className="overlay" onPointerDown={(event) => event.target === event.currentTarget && close()}>
-      <div className="dialog projects-dialog" role="dialog" aria-modal="true" aria-label="Projects">
+      <div className="dialog projects-dialog" role="dialog" aria-modal="true" aria-label={t("Projects")}>
         <div className="dialog-head">
           <div className="head-icon">
             <FolderOpen size={17} />
           </div>
           <div>
-            <h2>Projects</h2>
-            <p>Each project carries its own spaces, material, threads, drawings, categories and files.</p>
+            <h2>{t("Projects")}</h2>
+            <p>{t("Each project carries its own spaces, material, threads, drawings, categories and files.")}</p>
           </div>
-          <button className="icon-btn close-btn" onClick={close} title="Close">
+          <button className="icon-btn close-btn" onClick={close} title={t("Close")}>
             <X size={15} />
           </button>
         </div>
@@ -238,15 +244,15 @@ export default function ProjectsDialog(): React.JSX.Element | null {
                   {item.id === project?.id && <span className="tab-dot" />}
                   {item.name}
                 </span>
-                <span className="project-desc">{item.description || 'No description'}</span>
+                <span className="project-desc">{item.description || t('No description')}</span>
                 <span className="project-meta">
-                  <span>{item.spaceCount} spaces</span>
-                  <span>{item.cardCount} cards</span>
-                  <span>{formatDate(item.updatedAt)}</span>
+                  <span>{t('{count} spaces', { count: item.spaceCount })}</span>
+                  <span>{t('{count} cards', { count: item.cardCount })}</span>
+                  <span>{formatDate(item.updatedAt, locale)}</span>
                 </span>
               </button>
             ))}
-            {!projects.length && <div className="empty-projects">No projects yet.</div>}
+            {!projects.length && <div className="empty-projects">{t("No projects yet.")}</div>}
           </div>
 
           <div className="projects-detail">
@@ -254,35 +260,34 @@ export default function ProjectsDialog(): React.JSX.Element | null {
               <>
                 <h3>{active.name}</h3>
                 <div className="project-description">
-                  {active.description || 'No description yet.'}
+                  {active.description || t('No description yet.')}
                 </div>
                 <div className="project-stats">
                   <div className="stat">
                     <strong>{active.spaceCount}</strong>
-                    <span>Spaces</span>
+                    <span>{t("Spaces")}</span>
                   </div>
                   <div className="stat">
                     <strong>{active.cardCount}</strong>
-                    <span>Materials</span>
+                    <span>{t("Materials")}</span>
                   </div>
                   <div className="stat">
-                    <strong>{isCurrent ? 'Open' : 'On disk'}</strong>
-                    <span>Status</span>
+                    <strong>{isCurrent ? t('Open') : t('On disk')}</strong>
+                    <span>{t("Status")}</span>
                   </div>
                 </div>
 
                 <div className="field-col">
-                  <span className="field-label">Project name</span>
+                  <span className="field-label">{t("Project name")}</span>
                   <div className="row">
                     <input className="input" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} />
                     <button className="btn btn-sm" onClick={() => void rename()} disabled={busy}>
-                      Rename
-                    </button>
+                      {t("Rename")}{' '}</button>
                   </div>
                 </div>
 
                 <div className="field-col" style={{ marginTop: 10 }}>
-                  <span className="field-label">Description</span>
+                  <span className="field-label">{t("Description")}</span>
                   <textarea
                     className="textarea"
                     rows={2}
@@ -290,61 +295,52 @@ export default function ProjectsDialog(): React.JSX.Element | null {
                     disabled={!isCurrent}
                     onChange={(event) => setDescription(event.target.value)}
                     onBlur={() => void saveDescription()}
-                    placeholder={isCurrent ? 'What is this board for?' : 'Open this project to edit its description.'}
+                    placeholder={isCurrent ? t('What is this board for?') : t('Open this project to edit its description.')}
                   />
                 </div>
 
                 <div className="project-actions" style={{ marginTop: 18 }}>
                   <button className="btn btn-primary" onClick={() => void openProject(active.id)} disabled={busy}>
-                    {isCurrent ? 'Return to board' : 'Open project'}
+                    {isCurrent ? t('Return to board') : t('Open project')}
                   </button>
                   <button className="btn" onClick={() => void doExport()} disabled={busy}>
-                    Export .mndtr
-                  </button>
+                    {t("Export .mndtr")}{' '}</button>
                   <button className="btn" onClick={() => void duplicate()} disabled={busy}>
-                    <Copy size={12} /> Duplicate
-                  </button>
+                    <Copy size={12} /> {t("Duplicate")}{' '}</button>
                   <button className="btn" onClick={() => void revealProject(active.id)}>
-                    <ExternalLink size={12} /> Show files
-                  </button>
+                    <ExternalLink size={12} /> {t("Show files")}{' '}</button>
                   <button className="btn btn-danger" onClick={() => void remove()} disabled={busy || projects.length <= 1}>
-                    <Trash2 size={12} /> Delete
-                  </button>
+                    <Trash2 size={12} /> {t("Delete")}{' '}</button>
                 </div>
 
                 <div className="project-form">
-                  <div className="field-label">New project</div>
+                  <div className="field-label">{t("New project")}</div>
                   <div className="row">
-                    <input className="input" value={name} placeholder="Project name" onChange={(event) => setName(event.target.value)} />
+                    <input className="input" value={name} placeholder={t("Project name")} onChange={(event) => setName(event.target.value)} />
                     <button className="btn btn-sm" onClick={() => void createNew()} disabled={busy}>
-                      <Plus size={12} /> Create
-                    </button>
+                      <Plus size={12} /> {t("Create")}{' '}</button>
                   </div>
-                  <input className="input" value={newDescription} placeholder="Short description (optional)" onChange={(event) => setNewDescription(event.target.value)} />
+                  <input className="input" value={newDescription} placeholder={t("Short description (optional)")} onChange={(event) => setNewDescription(event.target.value)} />
                   <div className="settings-actions">
                     <button className="btn btn-sm" onClick={() => void doImport()} disabled={busy}>
-                      <Import size={12} /> Import .mndtr
-                    </button>
+                      <Import size={12} /> {t("Import .mndtr")}{' '}</button>
                     <button className="btn btn-sm" onClick={() => void refresh()} disabled={busy}>
-                      <RefreshCw size={12} /> Refresh
-                    </button>
+                      <RefreshCw size={12} /> {t("Refresh")}{' '}</button>
                     <span className="hint-text" style={{ alignSelf: 'center' }}>
-                      A new project starts with one blank board.
-                    </span>
+                      {t("A new project starts with one blank board.")}{' '}</span>
                   </div>
                 </div>
               </>
             ) : (
               <div className="empty-projects">
-                <p>No project selected.</p>
+                <p>{t("No project selected.")}</p>
                 <button
                   className="btn btn-primary"
                   onClick={() => {
                     void createNew()
                   }}
                 >
-                  Create a project
-                </button>
+                  {t("Create a project")}{' '}</button>
               </div>
             )}
           </div>
@@ -352,14 +348,16 @@ export default function ProjectsDialog(): React.JSX.Element | null {
 
         <div className="dialog-foot">
           <div className="left">
-            {busy ? 'Working…' : isCurrent ? 'Current project is open' : 'Changes are saved automatically'}
+            {busy
+              ? t('Working…')
+              : isCurrent
+                ? t('Current project is open')
+                : t('Changes are saved automatically')}
           </div>
           <button className="btn btn-sm" onClick={() => void doImport()} disabled={busy}>
-            <Import size={12} /> Import project
-          </button>
+            <Import size={12} /> {t("Import project")}{' '}</button>
           <button className="btn btn-primary" onClick={close}>
-            Close
-          </button>
+            {t("Close")}{' '}</button>
         </div>
       </div>
     </div>

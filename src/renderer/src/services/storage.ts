@@ -319,7 +319,7 @@ async function webSnapshot(id: string, label?: string): Promise<SnapshotResult> 
 /* -------------------------------- exports ------------------------------- */
 
 export const appInfo: AppInfo = {
-  version: '1.0.0',
+  version: '1.1.0',
   electron: 'browser preview',
   platform: 'web',
   dataDir: 'IndexedDB / localStorage',

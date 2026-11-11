@@ -29,6 +29,7 @@ import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { openAsset, openExternal, revealAsset } from '@/services/storage'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 const FONT_OPTIONS = [
   { label: 'Interface sans', value: 'Inter, "Segoe UI", sans-serif' },
@@ -61,36 +62,36 @@ export default function Inspector(): React.JSX.Element | null {
 
   const title = cards.length
     ? cards.length > 1
-      ? `${cards.length} cards`
+      ? t('{count} cards', { count: cards.length })
       : cards[0].title || t(kindLabel(cards[0].kind))
     : threads.length
       ? threads.length > 1
-        ? `${threads.length} threads`
-        : threads[0].label || 'Thread'
+        ? t('{count} threads', { count: threads.length })
+        : threads[0].label || t('Thread')
       : strokes.length
         ? strokes.length > 1
-          ? `${strokes.length} drawings`
-          : `Drawing · ${strokes[0].tool}`
+          ? t('{count} drawings', { count: strokes.length })
+          : t('Drawing · {tool}', { tool: t(strokes[0].tool) })
         : groups.length
           ? groups.length > 1
-            ? `${groups.length} groups`
+            ? t('{count} groups', { count: groups.length })
             : groups[0].title
-          : 'Selection'
+          : t('Selection')
 
   const kicker = cards.length
     ? cards.length > 1
-      ? 'MATERIALS'
+      ? t('Materials').toUpperCase()
       : t(kindLabel(cards[0].kind)).toUpperCase()
     : threads.length
-      ? 'CONNECTION'
+      ? t('Connection').toUpperCase()
       : strokes.length
-        ? 'CHALK / INK'
-        : 'GROUP'
+        ? t('Chalk / ink').toUpperCase()
+        : t('Group').toUpperCase()
 
   const clear = (): void => board.clearSelection()
 
   return (
-    <aside className={`inspector ${settings.ui.inspectorSide === 'left' ? 'side-left' : ''}`} aria-label="Inspector">
+    <aside className={`inspector ${settings.ui.inspectorSide === 'left' ? 'side-left' : ''}`} aria-label={t("Inspector")}>
       <div className="inspector-head">
         <div style={{ minWidth: 0 }}>
           <div className="inspector-kicker">{kicker}</div>
@@ -333,7 +334,7 @@ function CardsPanel({
             <span className="field-label">{t('Web address')}</span>
             <TextInput
               value={single.assetUrl ?? ''}
-              placeholder="https://…"
+              placeholder={t("https://…")}
               onFocus={() => begin('Edit link')}
               onChange={(value) => board.updateCard(single.id, { assetUrl: value })}
               onBlur={commit}
@@ -477,7 +478,7 @@ function CardsPanel({
             onClick={() =>
               updateStyle({ shadow: !(styleOf('shadow') ?? true) }, true)
             }
-            aria-label="Card shadow"
+            aria-label={t("Card shadow")}
           />
         </div>
 
@@ -522,7 +523,7 @@ function CardsPanel({
               >
                 {FONT_OPTIONS.map((font) => (
                   <option key={font.value} value={font.value}>
-                    {font.label}
+                    {t(font.label)}
                   </option>
                 ))}
               </select>
@@ -675,7 +676,7 @@ function CardsPanel({
             {single?.hidden ? t('Show') : t('Hide')}
           </button>
           <button className="btn btn-sm" onClick={() => board.groupSelection()}>
-            <Layers size={11} /> {t('Group')}
+            <Layers size={11} /> {t('Group cards')}
           </button>
           <button className="btn btn-sm" onClick={() => board.duplicateSelection()}>
             <Copy size={11} /> {t('Duplicate')}
@@ -880,7 +881,7 @@ function ThreadsPanel({
           <button
             className={`toggle ${threads.every((item) => item.hidden) ? 'is-on' : ''}`}
             onClick={() => board.hideThreads(ids, !threads.every((item) => item.hidden))}
-            aria-label="Hide threads"
+            aria-label={t("Hide threads")}
           />
         </div>
       </div>

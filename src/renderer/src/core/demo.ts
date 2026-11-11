@@ -1,7 +1,8 @@
-import type { Card, Category, Project, Thread } from '@shared/types'
+﻿import type { Card, Category, Project, Thread } from '@shared/types'
 import { DEFAULT_SETTINGS } from '@shared/settings'
-import { DEFAULT_CATEGORIES, demoStroke, makeGroup, newCard, newProject, newSpace } from './defaults'
+import { defaultCategories, demoStroke, makeGroup, newCard, newProject, newSpace } from './defaults'
 import { uid } from './id'
+import { tNow } from '@/i18n'
 
 function svg(source: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source.trim())}`
@@ -214,21 +215,21 @@ function welcomeNote(categories: Category[]): Card {
     color: '#d8cfc0',
     title: '',
     body:
-      '<p><strong>This is a physical space.</strong> Drag cards anywhere. Hover one and pull from a faint pin to tie a thread. Every thread is attached to the exact points you choose.</p>',
+      tNow('<p><strong>This is a physical space.</strong> Drag cards anywhere. Hover one and pull from a faint pin to tie a thread. Every thread is attached to the exact points you choose.</p>'),
     categories: [categories[1].id],
     style: { fontSize: 15, fontFamily: 'Georgia, serif' }
   })
 }
 
 export function createDemoProject(): Project {
-  const project = newProject('The Emerald Case')
-  project.description = 'A demonstration workspace — replace it with your own investigation.'
-  project.categories = structuredClone(DEFAULT_CATEGORIES)
+  const project = newProject(tNow('The Emerald Case'))
+  project.description = tNow('A demonstration workspace — replace it with your own investigation.')
+  project.categories = defaultCategories()
   const cat = project.categories
 
   const firstSpace = project.spaces[0]
-  firstSpace.name = 'Case 01 · Emerald'
-  firstSpace.description = 'Who moved the emerald?'
+  firstSpace.name = tNow('Case 01 · Emerald')
+  firstSpace.description = tNow('Who moved the emerald?')
 
   const gem = baseCard({
     kind: 'image',
@@ -236,11 +237,11 @@ export function createDemoProject(): Project {
     y: -300,
     w: 360,
     h: 290,
-    title: 'The emerald',
+    title: tNow('The emerald'),
     assetUrl: GEM_IMAGE,
     assetName: 'emerald-evidence.svg',
     mime: 'image/svg+xml',
-    caption: 'Vault camera still — 23:38',
+    caption: tNow('Vault camera still — 23:38'),
     categories: [cat[0].id]
   })
   const find = baseCard({
@@ -249,9 +250,9 @@ export function createDemoProject(): Project {
     y: -320,
     w: 340,
     h: 200,
-    title: 'Find the emerald',
+    title: tNow('Find the emerald'),
     body:
-      '<p>The emerald disappeared between <strong>23:10</strong> and <strong>23:40</strong>. No forced entry. The vault log shows a valid badge at 23:14.</p><p>Start with the people who had access.</p>',
+      tNow('<p>The emerald disappeared between <strong>23:10</strong> and <strong>23:40</strong>. No forced entry. The vault log shows a valid badge at 23:14.</p><p>Start with the people who had access.</p>'),
     categories: [cat[0].id, cat[2].id]
   })
   const log = baseCard({
@@ -262,7 +263,7 @@ export function createDemoProject(): Project {
     h: 210,
     color: '#e8c56a',
     body:
-      '<p><strong>Security log</strong></p><p>23:14 — badge #041 entered<br>23:26 — camera 03 lost feed<br>23:31 — loading bay door opened</p>',
+      tNow('<p><strong>Security log</strong></p><p>23:14 — badge #041 entered<br>23:26 — camera 03 lost feed<br>23:31 — loading bay door opened</p>'),
     categories: [cat[0].id]
   })
   const key = baseCard({
@@ -272,7 +273,7 @@ export function createDemoProject(): Project {
     w: 260,
     h: 180,
     color: '#e7a4b2',
-    body: '<p><strong>Ask M. about the vault key</strong></p><p>She signed it out on Tuesday and did not sign it back in.</p>',
+    body: tNow('<p><strong>Ask M. about the vault key</strong></p><p>She signed it out on Tuesday and did not sign it back in.</p>'),
     categories: [cat[2].id, cat[3].id]
   })
   const map = baseCard({
@@ -281,11 +282,11 @@ export function createDemoProject(): Project {
     y: 150,
     w: 420,
     h: 285,
-    title: 'East wing · camera blind spot',
+    title: tNow('East wing · camera blind spot'),
     assetUrl: MAP_IMAGE,
     assetName: 'east-wing-map.svg',
     mime: 'image/svg+xml',
-    caption: 'Camera 03 covers the vault door only. The service corridor is blind.',
+    caption: tNow('Camera 03 covers the vault door only. The service corridor is blind.'),
     categories: [cat[0].id]
   })
   const sticker = baseCard({
@@ -295,11 +296,11 @@ export function createDemoProject(): Project {
     w: 170,
     h: 110,
     color: '#9fbfdc',
-    body: '<p style="text-align:center"><strong>UNSOLVED</strong></p><p style="text-align:center;font-size:12px">no forced entry</p>',
+    body: tNow("<p style='text-align:center'><strong>UNSOLVED</strong></p><p style='text-align:center;font-size:12px'>no forced entry</p>"),
     categories: [cat[2].id],
     style: { fontSize: 20 }
   })
-  const peopleGroup = makeGroup('Persons of interest', '#c99a3d')
+  const peopleGroup = makeGroup(tNow('Persons of interest'), '#c99a3d')
   const moreau = baseCard({
     kind: 'note',
     x: 690,
@@ -307,7 +308,7 @@ export function createDemoProject(): Project {
     w: 250,
     h: 170,
     color: '#a9cbb6',
-    body: '<p><strong>V. Moreau</strong></p><p>Auctioneer. Badge #041. Claims she left at 23:20 — the loading bay says otherwise.</p>',
+    body: tNow('<p><strong>V. Moreau</strong></p><p>Auctioneer. Badge #041. Claims she left at 23:20 — the loading bay says otherwise.</p>'),
     groupId: peopleGroup.id,
     categories: [cat[3].id]
   })
@@ -318,7 +319,7 @@ export function createDemoProject(): Project {
     w: 250,
     h: 170,
     color: '#d8a77a',
-    body: '<p><strong>The Collector</strong></p><p>Anonymous buyer. Paid in advance for “a green stone”. Never seen in person.</p>',
+    body: tNow('<p><strong>The Collector</strong></p><p>Anonymous buyer. Paid in advance for “a green stone”. Never seen in person.</p>'),
     groupId: peopleGroup.id,
     categories: [cat[2].id]
   })
@@ -356,19 +357,19 @@ export function createDemoProject(): Project {
   firstSpace.camera = { x: 165, y: 165, zoom: 0.66 }
   firstSpace.updatedAt = Date.now()
 
-  const research = newSpace('Research · Deep sea signals', { x: 0, y: 20, zoom: 0.9 })
-  research.description = 'Hydrophone anomaly, North Atlantic'
+  const research = newSpace(tNow('Research · Deep sea signals'), { x: 0, y: 20, zoom: 0.9 })
+  research.description = tNow('Hydrophone anomaly, North Atlantic')
   const sonar = baseCard({
     kind: 'image',
     x: -560,
     y: -230,
     w: 410,
     h: 310,
-    title: 'Passive array · signal 47B',
+    title: tNow('Passive array · signal 47B'),
     assetUrl: SONAR_IMAGE,
     assetName: 'sonar-array.svg',
     mime: 'image/svg+xml',
-    caption: 'Repeating tonal pattern. 74 second interval. No known vessel.',
+    caption: tNow('Repeating tonal pattern. 74 second interval. No known vessel.'),
     categories: [cat[0].id]
   })
   const hydro = baseCard({
@@ -377,9 +378,9 @@ export function createDemoProject(): Project {
     y: -220,
     w: 340,
     h: 190,
-    title: 'Hydrophone anomaly',
+    title: tNow('Hydrophone anomaly'),
     body:
-      '<p>The array picked up a low-frequency pattern for <strong>six hours</strong> on 3 March. It repeats with almost perfect regularity.</p><p>Natural sources rarely hold a 74 s rhythm.</p>',
+      tNow('<p>The array picked up a low-frequency pattern for <strong>six hours</strong> on 3 March. It repeats with almost perfect regularity.</p><p>Natural sources rarely hold a 74 s rhythm.</p>'),
     categories: [cat[2].id]
   })
   const compare = baseCard({
@@ -389,7 +390,7 @@ export function createDemoProject(): Project {
     w: 240,
     h: 170,
     color: '#9fbfdc',
-    body: '<p><strong>Compare</strong></p><p>2023 expedition recorded something similar at 220 Hz — dismissed as equipment noise.</p>',
+    body: tNow('<p><strong>Compare</strong></p><p>2023 expedition recorded something similar at 220 Hz — dismissed as equipment noise.</p>'),
     categories: [cat[3].id]
   })
   const next = baseCard({
@@ -398,8 +399,8 @@ export function createDemoProject(): Project {
     y: 90,
     w: 340,
     h: 190,
-    title: 'Next steps',
-    body: '<ol><li>Pull the raw WAV from buoy 4.</li><li>Overlay both recordings.</li><li>Ask Dr. S. about the 220 Hz claim.</li></ol>',
+    title: tNow('Next steps'),
+    body: tNow('<ol><li>Pull the raw WAV from buoy 4.</li><li>Overlay both recordings.</li><li>Ask Dr. S. about the 220 Hz claim.</li></ol>'),
     categories: [cat[1].id]
   })
   const researchCards = [sonar, hydro, compare, next]
@@ -422,19 +423,19 @@ export function createDemoProject(): Project {
   }
   research.updatedAt = Date.now()
 
-  const study = newSpace('Study · Organic chemistry', { x: 0, y: 0, zoom: 0.92 })
-  study.description = 'Reaction mechanisms'
+  const study = newSpace(tNow('Study · Organic chemistry'), { x: 0, y: 0, zoom: 0.92 })
+  study.description = tNow('Reaction mechanisms')
   const molecule = baseCard({
     kind: 'image',
     x: -540,
     y: -210,
     w: 390,
     h: 300,
-    title: 'Backbone sketch',
+    title: tNow('Backbone sketch'),
     assetUrl: MOLECULE_IMAGE,
     assetName: 'molecule.svg',
     mime: 'image/svg+xml',
-    caption: 'Ch. 07 — nucleophilic substitution',
+    caption: tNow('Ch. 07 — nucleophilic substitution'),
     categories: [cat[1].id]
   })
   const sn = baseCard({
@@ -443,9 +444,9 @@ export function createDemoProject(): Project {
     y: -230,
     w: 360,
     h: 210,
-    title: 'Nucleophilic substitution',
+    title: tNow('Nucleophilic substitution'),
     body:
-      '<p><strong>S<sub>N</sub>1:</strong> two steps. Carbocation intermediate. Rate depends only on substrate.</p><p><strong>S<sub>N</sub>2:</strong> one step. Backside attack. Inversion of configuration.</p>',
+      tNow('<p><strong>S<sub>N</sub>1:</strong> two steps. Carbocation intermediate. Rate depends only on substrate.</p><p><strong>S<sub>N</sub>2:</strong> one step. Backside attack. Inversion of configuration.</p>'),
     categories: [cat[0].id]
   })
   const nucleophile = baseCard({
@@ -455,7 +456,7 @@ export function createDemoProject(): Project {
     w: 240,
     h: 170,
     color: '#a9cbb6',
-    body: '<p><strong>Remember</strong></p><p>Nucleophile = electron-rich. It wants the nucleus, not the electrons.</p>',
+    body: tNow('<p><strong>Remember</strong></p><p>Nucleophile = electron-rich. It wants the nucleus, not the electrons.</p>'),
     categories: [cat[1].id]
   })
   const compare2 = baseCard({
@@ -466,7 +467,7 @@ export function createDemoProject(): Project {
     h: 210,
     color: '#e8c56a',
     body:
-      '<p><strong>S<sub>N</sub>1 vs S<sub>N</sub>2</p><p>S<sub>N</sub>1 — tertiary, polar protic solvent.<br>S<sub>N</sub>2 — methyl/primary, polar aprotic, strong nucleophile.</p>',
+      tNow('<p><strong>S<sub>N</sub>1 vs S<sub>N</sub>2</p><p>S<sub>N</sub>1 — tertiary, polar protic solvent.<br>S<sub>N</sub>2 — methyl/primary, polar aprotic, strong nucleophile.</p>'),
     categories: [cat[3].id]
   })
   const studyCards = [molecule, sn, nucleophile, compare2]
@@ -495,24 +496,24 @@ export function createDemoProject(): Project {
 /** A clean, inviting board used when the user creates a new project. */
 export function createStarterProject(name: string): Project {
   const project = newProject(name)
-  project.categories = structuredClone(DEFAULT_CATEGORIES)
+  project.categories = defaultCategories()
   const cat = project.categories
   const space = project.spaces[0]
-  space.name = 'Board 01'
+  space.name = tNow('Board 01')
   const note = newCard('note', {
     at: { x: 0, y: 0 },
     settings: DEFAULT_SETTINGS,
     body:
-      '<p><strong>Your board is ready.</strong></p><p>Double-click empty space to add a card. Hover any card to reveal its pins, then pull a thread to another card.</p>',
+      tNow('<p><strong>Your board is ready.</strong></p><p>Double-click empty space to add a card. Hover any card to reveal its pins, then pull a thread to another card.</p>'),
     categories: [cat[1].id],
     color: '#e8c56a'
   })
   const hint = newCard('text', {
     at: { x: 420, y: 0 },
     settings: DEFAULT_SETTINGS,
-    title: 'Start here',
+    title: tNow('Start here'),
     body:
-      '<p>Drop images, video, PDFs or documents onto the board. Draw with chalk. Everything stays exactly where you put it.</p><p>Press <strong>Ctrl+K</strong> to search, or open Settings to shape the board to your taste.</p>',
+      tNow('<p>Drop images, video, PDFs or documents onto the board. Draw with chalk. Everything stays exactly where you put it.</p><p>Press <strong>Ctrl+K</strong> to search, or open Settings to shape the board to your taste.</p>'),
     categories: [cat[0].id]
   })
   note.z = 1

@@ -36,6 +36,7 @@ import {
 import { pinNorm } from '@/core/geometry'
 import { useT } from '@/i18n'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import { t } from '@/i18n'
 
 type DocState =
   | { status: 'idle' }
@@ -352,7 +353,7 @@ function CardView({
               className="resize-handle"
               data-handle={handle}
               data-resize={handle}
-              title="Resize"
+              title={t("Resize")}
             />
           ))}
         </>

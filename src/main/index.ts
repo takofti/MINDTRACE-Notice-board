@@ -359,9 +359,9 @@ async function exportProject(id: string): Promise<ExportResult> {
   const project = readJson<Project>(projectFile(id))
   if (!project) return { ok: false, error: 'Project not found' }
   const result = await dialog.showSaveDialog({
-    title: 'Export Mindtrace project',
+    title: await dialogText('Экспорт проекта Mindtrace', 'Export Mindtrace project'),
     defaultPath: `${projectLabel(project.name)}.mndtr`,
-    filters: [{ name: 'Mindtrace project', extensions: ['mndtr'] }]
+    filters: [{ name: await dialogText('Проект Mindtrace', 'Mindtrace project'), extensions: ['mndtr'] }]
   })
   if (result.canceled || !result.filePath) return { ok: false, canceled: true }
 
@@ -387,11 +387,11 @@ async function exportProject(id: string): Promise<ExportResult> {
 
 async function importProject(): Promise<ImportProjectResult> {
   const picked = await dialog.showOpenDialog({
-    title: 'Import Mindtrace project',
+    title: await dialogText('Импорт проекта Mindtrace', 'Import Mindtrace project'),
     properties: ['openFile'],
     filters: [
-      { name: 'Mindtrace project', extensions: ['mndtr', 'mindtrace'] },
-      { name: 'All files', extensions: ['*'] }
+      { name: await dialogText('Проект Mindtrace', 'Mindtrace project'), extensions: ['mndtr', 'mindtrace'] },
+      { name: await dialogText('Все файлы', 'All files'), extensions: ['*'] }
     ]
   })
   if (picked.canceled || !picked.filePaths[0]) return { ok: false, canceled: true }
@@ -546,13 +546,23 @@ async function saveSettings(file: SettingsFile): Promise<SaveResult> {
   return { ok: true, savedAt: Date.now() }
 }
 
+/** Native dialogs follow the interface language stored in settings. */
+async function dialogText(ru: string, en: string): Promise<string> {
+  try {
+    const file = await loadSettings()
+    return file.settings.ui.language === 'ru' ? ru : en
+  } catch {
+    return en
+  }
+}
+
 /* --------------------------------- export ------------------------------- */
 
 async function saveDataUrl(dataUrl: string, suggestedName: string): Promise<ExportResult> {
   const picked = await dialog.showSaveDialog({
-    title: 'Export board image',
+    title: await dialogText('Экспорт изображения доски', 'Export board image'),
     defaultPath: suggestedName,
-    filters: [{ name: 'PNG image', extensions: ['png'] }]
+    filters: [{ name: await dialogText('Изображение PNG', 'PNG image'), extensions: ['png'] }]
   })
   if (picked.canceled || !picked.filePath) return { ok: false, canceled: true }
   const comma = dataUrl.indexOf(',')
@@ -567,12 +577,12 @@ async function saveImage(dataUrl: string, suggestedName: string, format: string)
   const extension = normalized === 'jpeg' ? 'jpg' : normalized
   const filters =
     normalized === 'jpeg'
-      ? [{ name: 'JPEG image', extensions: ['jpg', 'jpeg'] }]
+      ? [{ name: await dialogText('Изображение JPEG', 'JPEG image'), extensions: ['jpg', 'jpeg'] }]
       : normalized === 'webp'
-        ? [{ name: 'WebP image', extensions: ['webp'] }]
-        : [{ name: 'PNG image', extensions: ['png'] }]
+        ? [{ name: await dialogText('Изображение WebP', 'WebP image'), extensions: ['webp'] }]
+        : [{ name: await dialogText('Изображение PNG', 'PNG image'), extensions: ['png'] }]
   const picked = await dialog.showSaveDialog({
-    title: 'Export board image',
+    title: await dialogText('Экспорт изображения доски', 'Export board image'),
     defaultPath: suggestedName,
     filters
   })
@@ -586,9 +596,9 @@ async function saveImage(dataUrl: string, suggestedName: string, format: string)
 
 async function savePdf(bytes: ArrayBuffer, suggestedName: string): Promise<ExportResult> {
   const picked = await dialog.showSaveDialog({
-    title: 'Export board PDF',
+    title: await dialogText('Экспорт доски в PDF', 'Export board PDF'),
     defaultPath: suggestedName,
-    filters: [{ name: 'PDF document', extensions: ['pdf'] }]
+    filters: [{ name: await dialogText('Документ PDF', 'PDF document'), extensions: ['pdf'] }]
   })
   if (picked.canceled || !picked.filePath) return { ok: false, canceled: true }
   await fs.writeFile(picked.filePath, Buffer.from(bytes))
@@ -826,11 +836,11 @@ function registerIpc(): void {
 
   ipcMain.handle('assets:pick', async (_e, projectId: string): Promise<ImportedAsset[]> => {
     const picked = await dialog.showOpenDialog({
-      title: 'Add material to board',
+      title: await dialogText('Добавить материал на доску', 'Add material to board'),
       properties: ['openFile', 'multiSelections'],
       filters: [
         {
-          name: 'All supported materials',
+          name: await dialogText('Все поддерживаемые материалы', 'All supported materials'),
           extensions: [
             'png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp', 'svg',
             'mp4', 'webm', 'mov', 'mkv', 'avi',
@@ -838,10 +848,10 @@ function registerIpc(): void {
             'pdf', 'docx', 'doc', 'txt', 'md', 'json', 'csv'
           ]
         },
-        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp', 'svg'] },
-        { name: 'Video', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] },
-        { name: 'Documents', extensions: ['pdf', 'docx', 'doc', 'txt', 'md'] },
-        { name: 'All files', extensions: ['*'] }
+        { name: await dialogText('Изображения', 'Images'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp', 'svg'] },
+        { name: await dialogText('Видео', 'Video'), extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] },
+        { name: await dialogText('Документы', 'Documents'), extensions: ['pdf', 'docx', 'doc', 'txt', 'md'] },
+        { name: await dialogText('Все файлы', 'All files'), extensions: ['*'] }
       ]
     })
     if (picked.canceled) return []
@@ -888,7 +898,7 @@ function registerIpc(): void {
   )
   ipcMain.handle('settings:export', async (_e, file: SettingsFile): Promise<ExportResult> => {
     const picked = await dialog.showSaveDialog({
-      title: 'Export settings',
+      title: await dialogText('Экспорт настроек', 'Export settings'),
       defaultPath: 'mindtrace-settings.json',
       filters: [{ name: 'JSON', extensions: ['json'] }]
     })
@@ -898,7 +908,7 @@ function registerIpc(): void {
   })
   ipcMain.handle('settings:import', async () => {
     const picked = await dialog.showOpenDialog({
-      title: 'Import settings',
+      title: await dialogText('Импорт настроек', 'Import settings'),
       properties: ['openFile'],
       filters: [{ name: 'JSON', extensions: ['json'] }]
     })
@@ -923,7 +933,7 @@ function registerIpc(): void {
 
   ipcMain.handle('storage:choose', async () => {
     const picked = await dialog.showOpenDialog({
-      title: 'Choose a folder for Mindtrace data',
+      title: await dialogText('Выберите папку данных Mindtrace', 'Choose a folder for Mindtrace data'),
       properties: ['openDirectory', 'createDirectory']
     })
     if (picked.canceled || !picked.filePaths[0]) return { ok: false }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, Pipette } from 'lucide-react'
 import { useT } from '@/i18n'
+import { t } from '@/i18n'
 
 const PALETTE = [
   '#e9e6de',
@@ -244,7 +245,7 @@ export default function ColorField({
               )}
             </div>
             <div className="color-hex-row">
-              <span className="color-hex-label">HEX</span>
+              <span className="color-hex-label">{t("HEX")}</span>
               <input
                 className="input color-hex-input"
                 value={draft}

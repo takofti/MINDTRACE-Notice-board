@@ -1,5 +1,6 @@
 import { AlertTriangle, X } from 'lucide-react'
 import { useUi } from '@/store/ui'
+import { t } from '@/i18n'
 
 export default function ConfirmDialog(): React.JSX.Element | null {
   const dialog = useUi((state) => state.confirmDialog)
@@ -17,7 +18,7 @@ export default function ConfirmDialog(): React.JSX.Element | null {
           <div>
             <h2>{dialog.title}</h2>
           </div>
-          <button className="icon-btn close-btn" onClick={() => void resolve(false)} title="Cancel">
+          <button className="icon-btn close-btn" onClick={() => void resolve(false)} title={t("Cancel")}>
             <X size={15} />
           </button>
         </div>
