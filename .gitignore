@@ -1,17 +1,31 @@
+# Dependencies
 node_modules/
+
+# Build files
 out/
 release/
-test-artifacts/
 .vite/
+
+# Temporary files
+test-artifacts/
 .temp/
 tmp/
+
+# Logs
 *.log
-*.tsbuildinfo
 npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# System files
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# IDE settings
 .idea/
 .vscode/
-/promt.txt
-/Promt.txt
+
+# Documentation
+/docs/
