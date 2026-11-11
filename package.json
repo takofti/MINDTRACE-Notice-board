@@ -4,7 +4,7 @@
   "description": "An immersive investigation board for visual knowledge work.",
   "main": "./out/main/index.js",
   "author": "Mindtrace",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-only",
   "private": true,
   "homepage": "https://github.com/your-org/mindtrace",
   "engines": {

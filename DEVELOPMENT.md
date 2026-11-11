@@ -166,4 +166,4 @@ await app.evaluate(({ dialog }, path) => {
 - `npm run dev:web` is for UI work only; it is not a shipped distribution target.
 - Video and PDF preview fidelity depends on Chromium's native media/PDF support.
 - Undo history is intentionally session-scoped. Use snapshots for durable recovery.
-- Do not add a license file until the owner chooses one; see `docs/LICENSE-PROPOSAL.md`.
+- The project is released under the GNU General Public License v3.0; see `LICENSE`. Keep the `license` field in `package.json` in sync.
