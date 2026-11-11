@@ -204,6 +204,7 @@ export function applyAppearance(settings: AppSettings): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   root.dataset.theme = settings.ui.theme
+  root.lang = settings.ui.language
   root.dataset.density = settings.ui.density
   root.dataset.motion = settings.ui.animations && !settings.ui.reducedMotion ? 'on' : 'off'
   root.dataset.quality = settings.performance.quality

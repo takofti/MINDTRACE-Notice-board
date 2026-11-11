@@ -34,7 +34,7 @@ export function freehandPathD(points: number[], smoothing: number): string {
   return d
 }
 
-export function strokeSvgPathD(stroke: Stroke, smoothing = 0.62): string {
+export function strokeSvgPathD(stroke: Stroke, smoothing = 0.62, cornerRadius = 0): string {
   if (stroke.points.length < 2) return ''
   switch (stroke.tool) {
     case 'line':
@@ -50,7 +50,7 @@ export function strokeSvgPathD(stroke: Stroke, smoothing = 0.62): string {
       const y = Math.min(a.y, b.y)
       const w = Math.abs(a.x - b.x)
       const h = Math.abs(a.y - b.y)
-      const r = Math.min(8, w / 2, h / 2)
+      const r = Math.min(cornerRadius, w / 2, h / 2)
       return `M ${x + r} ${y} H ${x + w - r} Q ${x + w} ${y} ${x + w} ${y + r} V ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} H ${x + r} Q ${x} ${y + h} ${x} ${y + h - r} V ${y + r} Q ${x} ${y} ${x + r} ${y} Z`
     }
     case 'ellipse': {

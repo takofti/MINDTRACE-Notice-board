@@ -8,12 +8,14 @@ import { normalizeProject } from '@/core/migrations'
 import {
   createProjectOnDisk,
   getAppInfo,
+  instantiateTemplate,
   listProjects,
   loadProjectFile,
   saveProjectFile,
   startSession,
   type ImportedAsset
 } from '@/services/storage'
+import { buildBuiltinProject } from '@/core/templates'
 
 export interface BootstrapResult {
   ok: boolean
@@ -175,6 +177,32 @@ export async function createStarterProject(name: string, description = ''): Prom
   useSettings.getState().setLastProject(starter.id)
   startSession(starter.id)
   return starter
+}
+
+export async function createProjectFromTemplate(
+  templateId: string,
+  name: string,
+  description = '',
+  custom = false
+): Promise<Project> {
+  let project: Project
+  if (custom) {
+    project = normalizeProject(await instantiateTemplate(templateId, name))
+    project.description = description
+    await saveProjectFile(project, { backups: 0 })
+  } else {
+    const created = await createProjectOnDisk(name, description)
+    const built = buildBuiltinProject(templateId, name)
+    built.id = created.id
+    built.createdAt = created.createdAt
+    built.description = description
+    await saveProjectFile(built, { backups: 0 })
+    project = built
+  }
+  useBoard.getState().openProject(project)
+  useSettings.getState().setLastProject(project.id)
+  startSession(project.id)
+  return project
 }
 
 export async function insertAssetsIntoBoard(assets: ImportedAsset[], at: { x: number; y: number }): Promise<void> {

@@ -236,11 +236,56 @@ export function threadGeometry(
   aNormal: Point,
   b: Point,
   bNormal: Point,
-  opts: { curve: number; lane?: number; laneCount?: number; reduceOverlap?: boolean; zoom?: number }
+  opts: {
+    curve: number
+    lane?: number
+    laneCount?: number
+    reduceOverlap?: boolean
+    zoom?: number
+    connectionType?: 'curved' | 'straight' | 'elbow'
+  }
 ): CurveGeometry {
   const dx = b.x - a.x
   const dy = b.y - a.y
   const distance = Math.hypot(dx, dy) || 1
+  if (opts.connectionType === 'straight') {
+    return {
+      p0: a,
+      c1: a,
+      c2: b,
+      p1: b,
+      mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      bbox: {
+        x: Math.min(a.x, b.x),
+        y: Math.min(a.y, b.y),
+        w: Math.abs(dx),
+        h: Math.abs(dy)
+      },
+      path: `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} L ${b.x.toFixed(2)} ${b.y.toFixed(2)}`
+    }
+  }
+  if (opts.connectionType === 'elbow') {
+    const bend1 = Math.abs(dx) > Math.abs(dy) ? { x: b.x, y: a.y } : { x: a.x, y: b.y }
+    const path =
+      Math.abs(dx) > Math.abs(dy)
+        ? `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} L ${bend1.x.toFixed(2)} ${bend1.y.toFixed(2)} L ${b.x.toFixed(2)} ${b.y.toFixed(2)}`
+        : `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} L ${bend1.x.toFixed(2)} ${bend1.y.toFixed(2)} L ${b.x.toFixed(2)} ${b.y.toFixed(2)}`
+    return {
+      p0: a,
+      c1: bend1,
+      c2: bend1,
+      p1: b,
+      mid: bend1,
+      bbox: {
+        x: Math.min(a.x, b.x),
+        y: Math.min(a.y, b.y),
+        w: Math.abs(dx),
+        h: Math.abs(dy)
+      },
+      path
+    }
+  }
+
   const bend = clamp(opts.curve ?? 0.3, -1.5, 1.5)
   const reach = clamp(distance * 0.34, 22, 190)
   const perp = { x: -dy / distance, y: dx / distance }
@@ -317,10 +362,15 @@ export function distanceToStroke(point: Point, stroke: Stroke): number {
 export function splitStrokeAt(
   stroke: Stroke,
   point: Point,
-  radius: number
+  radius: number,
+  shape: 'circle' | 'square' = 'circle'
 ): { keep: Stroke[]; removed: boolean } {
   const points = stroke.points
   if (!points.length) return { keep: [], removed: false }
+  const inside = (p: Point): boolean =>
+    shape === 'square'
+      ? Math.abs(p.x - point.x) <= radius && Math.abs(p.y - point.y) <= radius
+      : Math.hypot(point.x - p.x, point.y - p.y) <= radius
   if (stroke.tool === 'rect' || stroke.tool === 'ellipse' || stroke.tool === 'line' || stroke.tool === 'arrow') {
     const b = strokeBBox(stroke)
     const hit =
@@ -332,19 +382,17 @@ export function splitStrokeAt(
 
   const runs: number[][] = []
   let current: number[] = []
-  const step = Math.max(2, radius * 0.6)
   for (let i = 0; i < points.length; i += 2) {
     const p = { x: points[i], y: points[i + 1] }
     const px = i >= 2 ? { x: points[i - 2], y: points[i - 1] } : p
     const nearLine = i >= 2 && distanceToSegment(point, px, p) < radius
-    if (Math.hypot(point.x - p.x, point.y - p.y) < radius || nearLine) {
+    if (inside(p) || nearLine) {
       if (current.length >= 4) runs.push(current)
       current = []
     } else {
       if (!current.length && i >= 2) current.push(px.x, px.y)
       current.push(p.x, p.y)
     }
-    if (step < 2) break
   }
   if (current.length >= 2) runs.push(current)
   const removed = runs.length !== 1 || runs[0]?.length !== points.length
@@ -374,9 +422,9 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`
 }
 
-export function formatDate(ts: number): string {
+export function formatDate(ts: number, locale?: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(locale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

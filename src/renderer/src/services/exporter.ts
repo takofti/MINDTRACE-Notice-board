@@ -13,7 +13,12 @@ import { arrowHeadPathD, strokeSvgPathD } from '@/core/strokes'
 import { resolveAssetUrl } from '@/services/storage'
 
 export interface ExportOptions {
-  scale: number
+  scale?: number
+  width?: number
+  height?: number
+  format?: 'png' | 'jpeg' | 'webp'
+  quality?: number
+  transparent?: boolean
   includeBackground: boolean
   includeThreads: boolean
   includePins: boolean
@@ -26,6 +31,7 @@ export interface ExportResult {
 }
 
 const MAX_PIXELS = 90_000_000
+const MAX_DIMENSION = 20_000
 const imageCache = new Map<string, Promise<HTMLImageElement | null>>()
 
 function loadImage(url?: string): Promise<HTMLImageElement | null> {
@@ -34,6 +40,16 @@ function loadImage(url?: string): Promise<HTMLImageElement | null> {
   if (cached) return cached
   const promise = (async () => {
     try {
+      const image = new Image()
+      image.decoding = 'async'
+      if (url.startsWith('data:') || url.startsWith('blob:')) {
+        await new Promise<void>((resolve, reject) => {
+          image.onload = () => resolve()
+          image.onerror = () => reject(new Error('Image decode failed'))
+          image.src = url
+        })
+        return image
+      }
       const resolved = await resolveAssetUrl(url)
       if (!resolved) return null
       const response = await fetch(resolved)
@@ -41,8 +57,6 @@ function loadImage(url?: string): Promise<HTMLImageElement | null> {
       const blob = await response.blob()
       const objectUrl = URL.createObjectURL(blob)
       try {
-        const image = new Image()
-        image.decoding = 'async'
         await new Promise<void>((resolve, reject) => {
           image.onload = () => resolve()
           image.onerror = () => reject(new Error('Image decode failed'))
@@ -190,12 +204,12 @@ function drawCard(
   ctx.clip()
 
   if (isNote) {
-    const fontSize = card.style?.fontSize ?? settings.objects.noteFontSize
-    const font = `${fontSize}px ${settings.objects.textFontFamily}`
+    const fontSize = card.style?.fontSize ?? settings.tools.note.fontSize
+    const font = `${card.style?.italic ? 'italic ' : ''}${card.style?.bold ? '700 ' : '400 '}${fontSize}px ${settings.objects.textFontFamily}`
     drawTextBlock(ctx, htmlToText(card.body), card.x + 16, card.y + 16, card.w - 32, card.h - 32, {
       font,
       color: textColor,
-      lineHeight: fontSize * (settings.objects.textLineHeight || 1.45),
+      lineHeight: fontSize * ((card.style?.lineHeight ?? settings.objects.textLineHeight) || 1.45),
       align: card.style?.align ?? 'left'
     })
   } else {
@@ -330,9 +344,9 @@ function drawCard(
         card.w - 24,
         card.h - headerH - 18,
         {
-          font: `${fontSize}px ${card.style?.fontFamily ?? settings.objects.cardFontFamily}`,
+          font: `${card.style?.italic ? 'italic ' : ''}${card.style?.bold ? '700 ' : '400 '}${fontSize}px ${card.style?.fontFamily ?? settings.objects.cardFontFamily}`,
           color: textColor,
-          lineHeight: fontSize * (settings.objects.textLineHeight || 1.5),
+          lineHeight: fontSize * ((card.style?.lineHeight ?? settings.objects.textLineHeight) || 1.5),
           align: card.style?.align ?? 'left'
         }
       )
@@ -343,6 +357,98 @@ function drawCard(
 
 function kindName(kind: string): string {
   return kind.charAt(0).toUpperCase() + kind.slice(1)
+}
+
+function makeTexturePattern(
+  ctx: CanvasRenderingContext2D,
+  texture: AppSettings['board']['texture']
+): CanvasPattern | null {
+  if (texture === 'none') return null
+  const tile = document.createElement('canvas')
+  tile.width = 256
+  tile.height = 256
+  const tctx = tile.getContext('2d')
+  if (!tctx) return null
+  let seed = 17
+  const random = (): number => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  if (texture === 'cork') {
+    for (let i = 0; i < 900; i++) {
+      const x = random() * 256
+      const y = random() * 256
+      const radius = 0.4 + random() * 2.2
+      tctx.fillStyle = random() > 0.4 ? 'rgba(205,165,110,0.28)' : 'rgba(20,12,7,0.3)'
+      tctx.beginPath()
+      tctx.arc(x, y, radius, 0, Math.PI * 2)
+      tctx.fill()
+    }
+  } else if (texture === 'linen') {
+    tctx.strokeStyle = 'rgba(255,255,255,0.11)'
+    tctx.lineWidth = 1
+    for (let y = 0; y < 256; y += 4) {
+      tctx.beginPath()
+      tctx.moveTo(0, y)
+      tctx.lineTo(256, y)
+      tctx.stroke()
+    }
+    tctx.strokeStyle = 'rgba(0,0,0,0.12)'
+    for (let x = 0; x < 256; x += 5) {
+      tctx.beginPath()
+      tctx.moveTo(x, 0)
+      tctx.lineTo(x, 256)
+      tctx.stroke()
+    }
+  } else if (texture === 'paper') {
+    tctx.strokeStyle = 'rgba(60,45,30,0.08)'
+    tctx.lineWidth = 0.6
+    for (let i = 0; i < 220; i++) {
+      const x = random() * 256
+      const y = random() * 256
+      tctx.beginPath()
+      tctx.moveTo(x, y)
+      tctx.lineTo(x + random() * 18 - 9, y + random() * 4 - 2)
+      tctx.stroke()
+    }
+  } else if (texture === 'chalkboard') {
+    for (let i = 0; i < 40; i++) {
+      const x = random() * 256
+      const y = random() * 256
+      const radius = 8 + random() * 26
+      const grad = tctx.createRadialGradient(x, y, 0, x, y, radius)
+      grad.addColorStop(0, 'rgba(210,225,215,0.055)')
+      grad.addColorStop(1, 'rgba(210,225,215,0)')
+      tctx.fillStyle = grad
+      tctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+    }
+  } else {
+    for (let i = 0; i < 700; i++) {
+      const value = Math.floor(random() * 70)
+      tctx.fillStyle = `rgba(${value},${value},${value},0.25)`
+      tctx.fillRect(random() * 256, random() * 256, 1, 1)
+    }
+  }
+  return ctx.createPattern(tile, 'repeat')
+}
+
+function drawVignette(ctx: CanvasRenderingContext2D, width: number, height: number, background: string): void {
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  const gradient = ctx.createRadialGradient(
+    width / 2,
+    height / 2,
+    Math.min(width, height) * 0.2,
+    width / 2,
+    height / 2,
+    Math.max(width, height) * 0.72
+  )
+  gradient.addColorStop(0, 'rgba(0,0,0,0)')
+  gradient.addColorStop(1, 'rgba(0,0,0,0.32)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, width, height)
+  ctx.restore()
+  void background
 }
 
 export async function exportSpaceToImage(
@@ -364,20 +470,32 @@ export async function exportSpaceToImage(
         h: 800
       }
 
-  let scale = Math.max(0.5, options.scale)
-  const maxDim = Math.max(worldRect.w, worldRect.h)
-  let width = Math.ceil(worldRect.w * scale)
-  let height = Math.ceil(worldRect.h * scale)
+  const requestedScale = Math.max(0.1, options.scale ?? 1)
+  let width =
+    options.width && options.width > 0
+      ? Math.round(options.width)
+      : options.height && options.height > 0
+        ? Math.round((options.height / worldRect.h) * worldRect.w)
+        : Math.ceil(worldRect.w * requestedScale)
+  let height =
+    options.height && options.height > 0
+      ? Math.round(options.height)
+      : options.width && options.width > 0
+        ? Math.round((options.width / worldRect.w) * worldRect.h)
+        : Math.ceil(worldRect.h * requestedScale)
+
+  if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+    const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height)
+    width = Math.floor(width * ratio)
+    height = Math.floor(height * ratio)
+  }
   if (width * height > MAX_PIXELS) {
-    scale *= Math.sqrt(MAX_PIXELS / (width * height))
-    width = Math.ceil(worldRect.w * scale)
-    height = Math.ceil(worldRect.h * scale)
+    const ratio = Math.sqrt(MAX_PIXELS / (width * height))
+    width = Math.floor(width * ratio)
+    height = Math.floor(height * ratio)
   }
-  if (maxDim * scale > 24000) {
-    scale = 24000 / maxDim
-    width = Math.ceil(worldRect.w * scale)
-    height = Math.ceil(worldRect.h * scale)
-  }
+  width = Math.max(64, width)
+  height = Math.max(64, height)
 
   onProgress(0.1, 'Preparing cards and images')
   const cardList = Object.values(space.cards)
@@ -402,53 +520,65 @@ export async function exportSpaceToImage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas rendering is unavailable')
 
-  const scaleX = width / worldRect.w
-  const scaleY = height / worldRect.h
-  ctx.setTransform(scaleX, 0, 0, scaleY, -worldRect.x * scaleX, -worldRect.y * scaleY)
+  const contentScale = Math.min(width / worldRect.w, height / worldRect.h)
+  const offsetX = (width - worldRect.w * contentScale) / 2
+  const offsetY = (height - worldRect.h * contentScale) / 2
 
-  if (options.includeBackground) {
+  if (options.includeBackground && !options.transparent) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.fillStyle = settings.board.background
-    ctx.fillRect(worldRect.x, worldRect.y, worldRect.w, worldRect.h)
+    ctx.fillRect(0, 0, width, height)
     if (backgroundImage && settings.board.backgroundImage) {
       ctx.save()
       ctx.globalAlpha = settings.board.backgroundImageOpacity
-      const ratio = Math.max(worldRect.w / backgroundImage.width, worldRect.h / backgroundImage.height)
+      const ratio = Math.max(width / backgroundImage.width, height / backgroundImage.height)
       const w = backgroundImage.width * ratio
       const h = backgroundImage.height * ratio
-      ctx.drawImage(backgroundImage, worldRect.x + (worldRect.w - w) / 2, worldRect.y + (worldRect.h - h) / 2, w, h)
+      ctx.drawImage(backgroundImage, (width - w) / 2, (height - h) / 2, w, h)
       ctx.restore()
     }
-    if (settings.ui.showGridByDefault && settings.board.grid !== 'none') {
+    const texture = makeTexturePattern(ctx, settings.board.texture)
+    if (texture) {
       ctx.save()
-      ctx.globalAlpha = settings.board.gridOpacity * 0.8
-      ctx.fillStyle = settings.board.gridColor
-      ctx.strokeStyle = settings.board.gridColor
-      ctx.lineWidth = 0.8
-      const step = settings.board.gridSize
-      const startX = Math.ceil(worldRect.x / step) * step
-      const startY = Math.ceil(worldRect.y / step) * step
-      if (settings.board.grid === 'dots') {
-        for (let x = startX; x < worldRect.x + worldRect.w; x += step) {
-          for (let y = startY; y < worldRect.y + worldRect.h; y += step) {
-            ctx.beginPath()
-            ctx.arc(x, y, 1.05, 0, Math.PI * 2)
-            ctx.fill()
-          }
-        }
-      } else {
-        ctx.beginPath()
-        for (let x = startX; x < worldRect.x + worldRect.w; x += step) {
-          ctx.moveTo(x, worldRect.y)
-          ctx.lineTo(x, worldRect.y + worldRect.h)
-        }
-        for (let y = startY; y < worldRect.y + worldRect.h; y += step) {
-          ctx.moveTo(worldRect.x, y)
-          ctx.lineTo(worldRect.x + worldRect.w, y)
-        }
-        ctx.stroke()
-      }
+      ctx.globalAlpha = settings.board.textureOpacity
+      ctx.fillStyle = texture
+      ctx.fillRect(0, 0, width, height)
       ctx.restore()
     }
+  }
+
+  ctx.setTransform(contentScale, 0, 0, contentScale, offsetX - worldRect.x * contentScale, offsetY - worldRect.y * contentScale)
+
+  if (options.includeBackground && !options.transparent && settings.ui.showGridByDefault && settings.board.grid !== 'none') {
+    ctx.save()
+    ctx.globalAlpha = settings.board.gridOpacity * 0.8
+    ctx.fillStyle = settings.board.gridColor
+    ctx.strokeStyle = settings.board.gridColor
+    ctx.lineWidth = 0.8
+    const step = settings.board.gridSize
+    const startX = Math.ceil(worldRect.x / step) * step
+    const startY = Math.ceil(worldRect.y / step) * step
+    if (settings.board.grid === 'dots') {
+      for (let x = startX; x < worldRect.x + worldRect.w; x += step) {
+        for (let y = startY; y < worldRect.y + worldRect.h; y += step) {
+          ctx.beginPath()
+          ctx.arc(x, y, 1.05, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
+    } else {
+      ctx.beginPath()
+      for (let x = startX; x < worldRect.x + worldRect.w; x += step) {
+        ctx.moveTo(x, worldRect.y)
+        ctx.lineTo(x, worldRect.y + worldRect.h)
+      }
+      for (let y = startY; y < worldRect.y + worldRect.h; y += step) {
+        ctx.moveTo(worldRect.x, y)
+        ctx.lineTo(worldRect.x + worldRect.w, y)
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
   }
   onProgress(0.24, 'Drawing groups')
 
@@ -547,12 +677,31 @@ export async function exportSpaceToImage(
     ctx.save()
     ctx.globalAlpha = stroke.opacity
     const path = new Path2D(
-      strokeSvgPathD(stroke, settings.performance.smoothDrawing ? settings.objects.drawSmoothing : 0)
+      strokeSvgPathD(
+        stroke,
+        settings.performance.smoothDrawing
+          ? stroke.smoothing ?? settings.tools.pencil.smoothing
+          : 0,
+        stroke.cornerRadius ?? 0
+      )
     )
+    if (stroke.fill) {
+      ctx.fillStyle = stroke.fill
+      ctx.globalAlpha = stroke.opacity * (stroke.fillOpacity ?? 1)
+      ctx.fill(path)
+      ctx.globalAlpha = stroke.opacity
+    }
     ctx.strokeStyle = stroke.color
     ctx.lineWidth = stroke.width
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
+    ctx.setLineDash(
+      stroke.lineStyle === 'dashed'
+        ? [Math.max(6, stroke.width * 3), Math.max(4, stroke.width * 2.4)]
+        : stroke.lineStyle === 'dotted'
+          ? [1, Math.max(5, stroke.width * 3)]
+          : []
+    )
     if (stroke.tool === 'chalk' && settings.objects.chalkTexture) {
       ctx.globalAlpha = stroke.opacity * 0.55
       ctx.stroke(path)
@@ -562,6 +711,7 @@ export async function exportSpaceToImage(
     } else {
       ctx.stroke(path)
     }
+    ctx.setLineDash([])
     const arrow = arrowHeadPathD(stroke)
     if (arrow) {
       ctx.fillStyle = stroke.color
@@ -606,8 +756,15 @@ export async function exportSpaceToImage(
     }
   }
 
+  if (options.includeBackground && !options.transparent && settings.board.vignette) {
+    drawVignette(ctx, width, height, settings.board.background)
+  }
+
   onProgress(0.97, 'Encoding image')
-  const dataUrl = canvas.toDataURL('image/png')
+  const format = options.format ?? 'png'
+  const quality = format === 'png' ? undefined : Math.max(0.1, Math.min(1, options.quality ?? 0.92))
+  const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png'
+  const dataUrl = canvas.toDataURL(mime, quality)
   onProgress(1, 'Done')
   return { dataUrl, width, height }
 }
@@ -619,8 +776,12 @@ export async function exportSpaceToPdf(
   options: ExportOptions,
   onProgress: (value: number, message: string) => void
 ): Promise<Uint8Array> {
-  const result = await exportSpaceToImage(project, space, settings, options, (value, message) =>
-    onProgress(value * 0.82, message)
+  const result = await exportSpaceToImage(
+    project,
+    space,
+    settings,
+    { ...options, format: 'png' },
+    (value, message) => onProgress(value * 0.82, message)
   )
   onProgress(0.88, 'Building PDF')
   const { jsPDF } = await import('jspdf')
@@ -645,4 +806,11 @@ export function estimateExport(space: Space, scale: number): { width: number; he
   if (!bounds) return { width: Math.round(1200 * scale), height: Math.round(800 * scale) }
   const rect = expandRect(bounds, 90)
   return { width: Math.round(rect.w * scale), height: Math.round(rect.h * scale) }
+}
+
+export function exportBounds(space: Space): { width: number; height: number } {
+  const bounds = contentBounds(space, { includeStrokes: true })
+  if (!bounds) return { width: 1200, height: 800 }
+  const rect = expandRect(bounds, 90)
+  return { width: Math.round(rect.w), height: Math.round(rect.h) }
 }

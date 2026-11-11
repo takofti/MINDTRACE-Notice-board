@@ -20,6 +20,8 @@ import ContextMenu from '@/components/ContextMenu'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import Lightbox from '@/components/Lightbox'
 import Toasts from '@/components/Toasts'
+import HomeScreen from '@/components/HomeScreen'
+import CreateProjectDialog from '@/components/CreateProjectDialog'
 
 let bootPromise: ReturnType<typeof bootstrapApp> | null = null
 
@@ -33,6 +35,7 @@ export default function App(): React.JSX.Element {
   const editingCardId = useBoard((state) => state.editingCardId)
   const boardInteracting = useUi((state) => state.boardInteracting)
   const inspectorSide = useSettings((state) => state.settings.ui.inspectorSide)
+  const toolRailSide = useSettings((state) => state.settings.ui.toolRailSide)
   const showInspector = useSettings((state) => state.settings.ui.showInspector)
   const showToolRail = useSettings((state) => state.settings.ui.showToolRail)
   const [phase, setPhase] = useState<BootPhase>('loading')
@@ -106,6 +109,13 @@ export default function App(): React.JSX.Element {
   }, [project?.name])
 
   useEffect(() => {
+    if (phase !== 'ready') return
+    if (useSettings.getState().settings.ui.showHomeOnLaunch) {
+      useUi.getState().openHome()
+    }
+  }, [phase])
+
+  useEffect(() => {
     if (!loaded) return
     const error = useSettings.getState().error
     if (error) useUi.getState().toast(error, 'error', 5000)
@@ -140,10 +150,11 @@ export default function App(): React.JSX.Element {
             className={[
               'app-body',
               inspectorVisible && inspectorSide === 'right' ? 'inspector-right' : '',
-              inspectorVisible && inspectorSide === 'left' ? 'inspector-left' : ''
+              inspectorVisible && inspectorSide === 'left' ? 'inspector-left' : '',
+              toolRailSide === 'right' ? 'rail-right' : ''
             ].join(' ')}
           >
-            {showToolRail && <ToolRail />}
+            {showToolRail && toolRailSide === 'left' && <ToolRail />}
             {inspectorVisible && inspectorSide === 'left' && <Inspector />}
             <main className="workspace">
               <Board />
@@ -180,6 +191,7 @@ export default function App(): React.JSX.Element {
                 </div>
               )}
             </main>
+            {showToolRail && toolRailSide === 'right' && <ToolRail />}
             {inspectorVisible && inspectorSide === 'right' && <Inspector />}
           </div>
         </>
@@ -188,6 +200,8 @@ export default function App(): React.JSX.Element {
       <SearchPalette />
       <SettingsDialog />
       <ProjectsDialog />
+      <CreateProjectDialog />
+      <HomeScreen />
       <FilterDialog />
       <HelpDialog />
       <ExportDialog />

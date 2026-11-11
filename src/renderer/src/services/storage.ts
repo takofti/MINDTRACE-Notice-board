@@ -7,7 +7,8 @@ import {
   type Project,
   type ProjectFile,
   type ProjectSummary,
-  type StorageSnapshot
+  type StorageSnapshot,
+  type TemplateSummary
 } from '@shared/types'
 import { downloadBlob, downloadDataUrl } from '@/core/geometry'
 import { uid } from '@/core/id'
@@ -425,6 +426,29 @@ export async function revealProject(id: string): Promise<void> {
   if (electron) await electron.projects.reveal(id)
 }
 
+export async function listTemplates(): Promise<TemplateSummary[]> {
+  if (electron) return electron.templates.list()
+  return []
+}
+
+export async function saveProjectAsTemplate(
+  projectId: string,
+  name: string,
+  description: string
+): Promise<TemplateSummary> {
+  if (!electron) throw new Error('Templates are available in the desktop app.')
+  return electron.templates.save(projectId, name, description)
+}
+
+export async function instantiateTemplate(templateId: string, name: string): Promise<Project> {
+  if (!electron) throw new Error('Templates are available in the desktop app.')
+  return electron.templates.instantiate(templateId, name)
+}
+
+export async function removeTemplate(templateId: string): Promise<void> {
+  if (electron) await electron.templates.remove(templateId)
+}
+
 export async function listSnapshots(id: string): Promise<StorageSnapshot[]> {
   return electron ? electron.projects.snapshots(id) : webSnapshots(id)
 }
@@ -583,6 +607,16 @@ export async function chooseDataFolder(): Promise<{ ok: boolean; path?: string; 
 
 export async function savePng(dataUrl: string, suggestedName: string): Promise<ExportResult> {
   if (electron) return electron.export.savePng(dataUrl, suggestedName)
+  downloadDataUrl(dataUrl, suggestedName)
+  return { ok: true }
+}
+
+export async function saveImage(
+  dataUrl: string,
+  suggestedName: string,
+  format: string
+): Promise<ExportResult> {
+  if (electron) return electron.export.saveImage(dataUrl, suggestedName, format)
   downloadDataUrl(dataUrl, suggestedName)
   return { ok: true }
 }

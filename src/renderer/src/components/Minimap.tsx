@@ -10,6 +10,7 @@ import {
   unionRects
 } from '@/core/geometry'
 import { visibleWorldRect } from '@/core/camera'
+import { useT } from '@/i18n'
 
 const WIDTH = 226
 const HEIGHT = 132
@@ -51,6 +52,7 @@ export default function Minimap({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const selection = useBoard((state) => state.selection)
+  const t = useT()
   const mappingRef = useRef<{
     scale: number
     offsetX: number
@@ -176,10 +178,10 @@ export default function Minimap({
     <div className={`minimap ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="minimap-head">
         <MapIcon size={10} />
-        <span className="minimap-title">OVERVIEW</span>
+        <span className="minimap-title">{t('OVERVIEW')}</span>
         <button
           onClick={() => setCollapsed((value) => !value)}
-          title={collapsed ? 'Expand minimap' : 'Collapse minimap'}
+          title={collapsed ? t('Expand') : t('Collapse')}
         >
           {collapsed ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
         </button>
@@ -196,7 +198,7 @@ export default function Minimap({
           onPointerMove={(event) => {
             if (event.buttons === 1) navigate(event)
           }}
-          title="Drag to move the board"
+          title={t('Drag to move the board')}
         />
       )}
     </div>

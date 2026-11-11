@@ -2,7 +2,8 @@ import type {
   Project,
   ProjectFile,
   ProjectSummary,
-  StorageSnapshot
+  StorageSnapshot,
+  TemplateSummary
 } from '@shared/types'
 import type { SettingsFile } from '@shared/settings'
 
@@ -77,6 +78,12 @@ export interface MindtraceAPI {
     open(ref: string): Promise<void>
     reveal(ref: string): Promise<void>
   }
+  templates: {
+    list(): Promise<TemplateSummary[]>
+    save(projectId: string, name: string, description: string): Promise<TemplateSummary>
+    instantiate(templateId: string, name: string): Promise<Project>
+    remove(templateId: string): Promise<void>
+  }
   settings: {
     load(): Promise<SettingsFile>
     save(file: SettingsFile): Promise<SaveResult>
@@ -91,6 +98,7 @@ export interface MindtraceAPI {
   export: {
     savePng(dataUrl: string, suggestedName: string): Promise<ExportResult>
     savePdf(bytes: ArrayBuffer, suggestedName: string): Promise<ExportResult>
+    saveImage(dataUrl: string, suggestedName: string, format: string): Promise<ExportResult>
   }
   shell: {
     openPath(path: string): Promise<void>

@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import type { DecorAction } from '@shared/settings'
+import type { DecorAction, ToolAction, ShapeKind } from '@shared/settings'
 import { useBoard } from '@/store/board'
 import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 import { saveProjectNow } from '@/services/bootstrap'
+
+const SHAPE_CYCLE: ShapeKind[] = ['rect', 'ellipse', 'line', 'arrow']
 
 interface ParsedCombo {
   key: string
@@ -112,6 +114,29 @@ export function useHotkeys(): void {
       if (editing) return
 
       if (ui.modal) return
+
+      // Single-key tool switching is the primary tool mechanic, Photoshop-style.
+      if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+        const toolEntries = Object.entries(settings.tools.bindings) as [ToolAction, string][]
+        const matchedTool = toolEntries.find(([, combo]) => combo && comboMatches(event, combo))
+        if (matchedTool) {
+          event.preventDefault()
+          const [action] = matchedTool
+          if (action === 'rect' || action === 'ellipse' || action === 'line' || action === 'arrow') {
+            useSettings.getState().update('tools', { lastShape: action })
+          }
+          useBoard.getState().setTool(action)
+          return
+        }
+        if (event.shiftKey && event.key.toLowerCase() === 'r') {
+          const current = settings.tools.lastShape
+          const next = SHAPE_CYCLE[(SHAPE_CYCLE.indexOf(current) + 1) % SHAPE_CYCLE.length]
+          event.preventDefault()
+          useSettings.getState().update('tools', { lastShape: next })
+          useBoard.getState().setTool(next)
+          return
+        }
+      }
 
       if (matches('undo')) {
         event.preventDefault()

@@ -33,6 +33,12 @@ const api: MindtraceAPI = {
     open: (ref) => ipcRenderer.invoke('assets:open', ref),
     reveal: (ref) => ipcRenderer.invoke('assets:reveal', ref)
   },
+  templates: {
+    list: () => ipcRenderer.invoke('templates:list'),
+    save: (projectId, name, description) => ipcRenderer.invoke('templates:save', projectId, name, description),
+    instantiate: (templateId, name) => ipcRenderer.invoke('templates:instantiate', templateId, name),
+    remove: (templateId) => ipcRenderer.invoke('templates:remove', templateId)
+  },
   settings: {
     load: () => ipcRenderer.invoke('settings:load'),
     save: (file) => ipcRenderer.invoke('settings:save', file),
@@ -46,7 +52,8 @@ const api: MindtraceAPI = {
   },
   export: {
     savePng: (dataUrl, name) => ipcRenderer.invoke('export:png', dataUrl, name),
-    savePdf: (bytes, name) => ipcRenderer.invoke('export:pdf', bytes, name)
+    savePdf: (bytes, name) => ipcRenderer.invoke('export:pdf', bytes, name),
+    saveImage: (dataUrl, name, format) => ipcRenderer.invoke('export:image', dataUrl, name, format)
   },
   shell: {
     openPath: (path) => ipcRenderer.invoke('shell:openPath', path),

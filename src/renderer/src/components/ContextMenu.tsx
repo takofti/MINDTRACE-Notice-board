@@ -30,6 +30,7 @@ import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 import { createSnapshot } from '@/services/storage'
+import { useT } from '@/i18n'
 
 export default function ContextMenu(): React.JSX.Element | null {
   const target = useUi((state) => state.contextMenu)
@@ -42,6 +43,7 @@ export default function ContextMenu(): React.JSX.Element | null {
   const space = useActiveSpace()
   const settings = useSettings((state) => state.settings)
   const updateSettings = useSettings((state) => state.update)
+  const t = useT()
   const menuRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
 
@@ -105,16 +107,16 @@ export default function ContextMenu(): React.JSX.Element | null {
       return
     }
     ask({
-      title: 'Delete space?',
-      message: `“${name}” and everything pinned to it will be removed.\n\nAn undo step is available immediately afterwards, and the project keeps rolling backups.`,
-      confirmLabel: 'Delete space',
+      title: t('Delete space?'),
+      message: t('“{name}” and everything pinned to it will be removed. An undo step is available immediately afterwards, and the project keeps rolling backups.', { name }),
+      confirmLabel: t('Delete space'),
       danger: true,
       action: () => {
         if (project && settings.data.snapshotOnSpaceDelete) {
           void createSnapshot(project.id, 'before-space-delete')
         }
         board.deleteSpace(id)
-        toast('Space deleted — Ctrl+Z to restore', 'info', 2600)
+        toast(t('Space deleted — Ctrl+Z to restore'), 'info', 2600)
       }
     })
   }
@@ -134,7 +136,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           {(card.kind === 'text' || card.kind === 'note') && (
             <MenuItem
               icon={Pencil}
-              label="Edit text"
+              label={t('Edit text')}
               onClick={() =>
                 run(() => {
                   board.selectCard(card.id)
@@ -145,56 +147,61 @@ export default function ContextMenu(): React.JSX.Element | null {
           )}
           <MenuItem
             icon={Copy}
-            label="Duplicate"
+            label={t('Duplicate')}
             hint="Ctrl+D"
             onClick={() => run(() => board.duplicateSelection())}
           />
           <MenuItem
             icon={Copy}
-            label="Copy"
+            label={t('Copy')}
             hint="Ctrl+C"
             onClick={() => {
               const count = board.copySelection()
               close()
-              if (count) toast(`Copied ${count} object${count === 1 ? '' : 's'}`, 'success', 1500)
+              if (count)
+                toast(
+                  t(count === 1 ? 'Copied {count} object' : 'Copied {count} objects', { count }),
+                  'success',
+                  1500
+                )
             }}
           />
           <MenuItem
             icon={Focus}
-            label="Focus on this card"
+            label={t('Focus on this card')}
             onClick={() => run(() => focusCard(card.id))}
           />
           <MenuItem
             icon={Link2}
-            label={`Select connected chain (${settings.interaction.focusDepth})`}
+            label={t('Select connected chain ({count})', { count: settings.interaction.focusDepth })}
             onClick={() => run(() => focusCard(card.id, true))}
           />
           <div className="context-sep" />
           <MenuItem
             icon={ChevronsUp}
-            label="Bring to front"
+            label={t('Bring to front')}
             onClick={() => run(() => board.bringForward('front'))}
           />
           <MenuItem
             icon={ArrowUp}
-            label="Bring forward"
+            label={t('Bring forward')}
             onClick={() => run(() => board.bringForward('forward'))}
           />
           <MenuItem
             icon={ArrowDown}
-            label="Send backward"
+            label={t('Send backward')}
             onClick={() => run(() => board.bringForward('backward'))}
           />
           <MenuItem
             icon={ChevronsDown}
-            label="Send to back"
+            label={t('Send to back')}
             onClick={() => run(() => board.bringForward('back'))}
           />
           <div className="context-sep" />
-          <MenuItem icon={Pin} label="Add pin here" hint="Alt+click" onClick={() => run(addPinHere)} />
+          <MenuItem icon={Pin} label={t('Add pin here')} hint="Alt+click" onClick={() => run(addPinHere)} />
           <MenuItem
             icon={card.locked ? Unlock : Lock}
-            label={card.locked ? 'Unlock card' : 'Lock in place'}
+            label={t(card.locked ? 'Unlock card' : 'Lock in place')}
             onClick={() =>
               run(() => {
                 board.selectCard(card.id)
@@ -204,7 +211,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={card.hidden ? Eye : EyeOff}
-            label={card.hidden ? 'Show card' : 'Hide card'}
+            label={t(card.hidden ? 'Show card' : 'Hide card')}
             onClick={() =>
               run(() => {
                 board.selectCard(card.id)
@@ -214,18 +221,18 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={Layers}
-            label="Group selected cards"
+            label={t('Group selected cards')}
             hint="Ctrl+G"
             onClick={() => {
               const id = board.groupSelection()
               close()
-              if (id) toast('Cards grouped', 'success', 1500)
+              if (id) toast(t('Cards grouped'), 'success', 1500)
             }}
           />
           {project && project.categories.length > 0 && (
             <>
               <div className="context-sep" />
-              <div className="context-label">Categories</div>
+              <div className="context-label">{t('Categories')}</div>
               {project.categories.map((category) => {
                 const active = card.categories.includes(category.id)
                 return (
@@ -260,7 +267,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           <div className="context-sep" />
           <MenuItem
             icon={Trash2}
-            label="Delete card"
+            label={t('Delete card')}
             hint="Del"
             danger
             onClick={() => run(() => board.deleteSelection())}
@@ -270,9 +277,9 @@ export default function ContextMenu(): React.JSX.Element | null {
 
       {thread && (
         <>
-          <div className="context-label">Thread</div>
+          <div className="context-label">{t('Thread')}</div>
           <div className="context-label" style={{ paddingTop: 2 }}>
-            Colour
+            {t('Colour')}
           </div>
           <div className="context-swatches">
             {THREAD_PALETTE.map((color) => (
@@ -287,7 +294,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           </div>
           <MenuItem
             icon={EyeOff}
-            label={thread.hidden ? 'Show thread' : 'Hide thread'}
+            label={t(thread.hidden ? 'Show thread' : 'Hide thread')}
             onClick={() => {
               board.hideThreads([thread.id], !thread.hidden)
               close()
@@ -295,7 +302,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={X}
-            label="Remove thread"
+            label={t('Remove thread')}
             hint="Del"
             danger
             onClick={() => run(() => board.deleteThreads([thread.id]))}
@@ -309,10 +316,10 @@ export default function ContextMenu(): React.JSX.Element | null {
 
       {stroke && (
         <>
-          <div className="context-label">Drawing</div>
+          <div className="context-label">{t('Drawing')}</div>
           <MenuItem
             icon={stroke.locked ? Unlock : Lock}
-            label={stroke.locked ? 'Unlock drawing' : 'Lock drawing'}
+            label={t(stroke.locked ? 'Unlock drawing' : 'Lock drawing')}
             onClick={() =>
               run(() => {
                 board.selectStroke(stroke.id)
@@ -322,12 +329,12 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={EyeOff}
-            label={stroke.hidden ? 'Show drawing' : 'Hide drawing'}
+            label={t(stroke.hidden ? 'Show drawing' : 'Hide drawing')}
             onClick={() => run(() => board.updateStroke(stroke.id, { hidden: !stroke.hidden }, true))}
           />
           <MenuItem
             icon={Trash2}
-            label="Erase drawing"
+            label={t('Erase drawing')}
             hint="Del"
             danger
             onClick={() => run(() => board.deleteStrokes([stroke.id]))}
@@ -337,13 +344,13 @@ export default function ContextMenu(): React.JSX.Element | null {
 
       {group && (
         <>
-          <div className="context-label">Group</div>
+          <div className="context-label">{t('Group')}</div>
           <MenuItem
             icon={group.collapsed ? ChevronsDown : ChevronsUp}
-            label={group.collapsed ? 'Expand group' : 'Collapse group'}
+            label={t(group.collapsed ? 'Expand group' : 'Collapse group')}
             onClick={() => run(() => board.toggleGroupCollapsed(group.id))}
           />
-          <div className="context-label">Group colour</div>
+          <div className="context-label">{t('Group colour')}</div>
           <div className="context-swatches">
             {THREAD_PALETTE.map((color) => (
               <button
@@ -356,7 +363,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           </div>
           <MenuItem
             icon={group.locked ? Unlock : Lock}
-            label={group.locked ? 'Unlock group' : 'Lock group'}
+            label={t(group.locked ? 'Unlock group' : 'Lock group')}
             onClick={() =>
               run(() => {
                 board.selectGroup(group.id)
@@ -366,13 +373,13 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={Layers}
-            label="Ungroup (keep cards)"
+            label={t('Ungroup (keep cards)')}
             onClick={() => run(() => board.ungroup([group.id]))}
           />
           <div className="context-sep" />
           <MenuItem
             icon={Trash2}
-            label="Remove group frame"
+            label={t('Remove group frame')}
             danger
             onClick={() => run(() => board.ungroup([group.id]))}
           />
@@ -381,20 +388,20 @@ export default function ContextMenu(): React.JSX.Element | null {
 
       {target.type === 'canvas' && (
         <>
-          <div className="context-label">Board</div>
+          <div className="context-label">{t('Board')}</div>
           <MenuItem
             icon={StickyNote}
-            label="New note here"
+            label={t('New note here')}
             onClick={() => run(() => board.createCard('note', target.world))}
           />
           <MenuItem
             icon={Type}
-            label="New text card here"
+            label={t('New text card here')}
             onClick={() => run(() => board.createCard('text', target.world))}
           />
           <MenuItem
             icon={Pin}
-            label="Add material…"
+            label={t('Add material…')}
             onClick={() => {
               emitBoardEvent(BOARD_EVENTS.attach)
               close()
@@ -402,25 +409,30 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={Copy}
-            label="Paste here"
+            label={t('Paste here')}
             hint="Ctrl+V"
             disabled={!board.clipboard}
             onClick={() => {
               const count = board.pasteClipboard(target.world)
               close()
-              if (count) toast(`Pasted ${count} object${count === 1 ? '' : 's'}`, 'success', 1400)
+              if (count)
+                toast(
+                  t(count === 1 ? 'Pasted {count} object' : 'Pasted {count} objects', { count }),
+                  'success',
+                  1400
+                )
             }}
           />
           <div className="context-sep" />
-          <MenuItem icon={Scan} label="Fit board" hint="Ctrl+0" onClick={() => run(() => emitBoardEvent(BOARD_EVENTS.fit))} />
+          <MenuItem icon={Scan} label={t('Fit board')} hint="Ctrl+0" onClick={() => run(() => emitBoardEvent(BOARD_EVENTS.fit))} />
           <MenuItem
             icon={Crosshair}
-            label="Center on content"
+            label={t('Center on content')}
             onClick={() => run(() => emitBoardEvent(BOARD_EVENTS.center))}
           />
           <MenuItem
             icon={LayoutGrid}
-            label={settings.ui.showGridByDefault ? 'Hide grid' : 'Show grid'}
+            label={t(settings.ui.showGridByDefault ? 'Hide grid' : 'Show grid')}
             onClick={() => {
               updateSettings('ui', { showGridByDefault: !settings.ui.showGridByDefault })
               close()
@@ -428,7 +440,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <MenuItem
             icon={board.showHidden ? EyeOff : Eye}
-            label={board.showHidden ? 'Hide hidden cards' : 'Show hidden cards'}
+            label={t(board.showHidden ? 'Hide hidden cards' : 'Show hidden cards')}
             onClick={() => {
               board.setShowHidden(!board.showHidden)
               close()
@@ -437,7 +449,7 @@ export default function ContextMenu(): React.JSX.Element | null {
           <div className="context-sep" />
           <MenuItem
             icon={Focus}
-            label={board.mode === 'focus' ? 'Leave focus mode' : 'Select all & focus'}
+            label={t(board.mode === 'focus' ? 'Leave focus mode' : 'Select all & focus')}
             onClick={() =>
               run(() => {
                 board.selectAll()
@@ -445,26 +457,26 @@ export default function ContextMenu(): React.JSX.Element | null {
               })
             }
           />
-          <MenuItem icon={Layers} label="Select all" hint="Ctrl+A" onClick={() => run(() => board.selectAll())} />
+          <MenuItem icon={Layers} label={t('Select all')} hint="Ctrl+A" onClick={() => run(() => board.selectAll())} />
         </>
       )}
 
       {target.type === 'spaceTab' && targetSpace && (
         <>
-          <div className="context-label">Space</div>
+          <div className="context-label">{t('Space')}</div>
           <MenuItem
             icon={Pencil}
-            label="Rename space"
+            label={t('Rename space')}
             onClick={() => {
               board.switchSpace(targetSpace.id)
               setRenameSpaceId(targetSpace.id)
               close()
             }}
           />
-          <MenuItem icon={Copy} label="Duplicate space" onClick={() => run(() => board.duplicateSpace(targetSpace.id))} />
+          <MenuItem icon={Copy} label={t('Duplicate space')} onClick={() => run(() => board.duplicateSpace(targetSpace.id))} />
           <MenuItem
             icon={Trash2}
-            label="Delete space"
+            label={t('Delete space')}
             danger
             disabled={(project?.spaces.length ?? 0) <= 1}
             onClick={() => {
@@ -474,21 +486,24 @@ export default function ContextMenu(): React.JSX.Element | null {
           />
           <div className="context-sep" />
           <div className="context-label" style={{ lineHeight: 1.5 }}>
-            {Object.keys(targetSpace.cards).length} cards · {Object.keys(targetSpace.threads).length} threads
+            {t('{cards} cards · {threads} threads', {
+              cards: Object.keys(targetSpace.cards).length,
+              threads: Object.keys(targetSpace.threads).length
+            })}
           </div>
         </>
       )}
 
       {target.type === 'project' && (
         <>
-          <div className="context-label">Project</div>
-          <MenuItem icon={Scan} label="Open project manager…" onClick={() => run(() => openModal('projects'))} />
-          <MenuItem icon={Copy} label="Export board or project…" onClick={() => run(() => openModal('export'))} />
+          <div className="context-label">{t('Project')}</div>
+          <MenuItem icon={Scan} label={t('Open project manager…')} onClick={() => run(() => openModal('projects'))} />
+          <MenuItem icon={Copy} label={t('Export board or project…')} onClick={() => run(() => openModal('export'))} />
         </>
       )}
 
       {!card && !thread && !stroke && !group && target.type !== 'canvas' && target.type !== 'spaceTab' && target.type !== 'project' && (
-        <div className="context-label">Nothing selected</div>
+        <div className="context-label">{t('Nothing selected')}</div>
       )}
 
       <div className="context-sep" />

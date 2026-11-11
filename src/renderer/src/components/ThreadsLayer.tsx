@@ -78,10 +78,11 @@ export default function ThreadsLayer({
         const dimmed = activeFocus ? !relevant : selectedCards.size > 0 && !relevant
         const highlighted = relevant || isSelected
         const opacity = (thread.opacity ?? 1) * (mode === 'overview' ? 0.75 : 1)
+        const visual = thread.visualStyle ?? 'realistic'
         const dash =
-          thread.style === 'dashed'
+          (thread.lineStyle ?? thread.style) === 'dashed'
             ? `${Math.max(5, thread.width * 3)} ${Math.max(4, thread.width * 2.5)}`
-            : thread.style === 'dotted'
+            : (thread.lineStyle ?? thread.style) === 'dotted'
               ? `1 ${Math.max(5, thread.width * 2.8)}`
               : undefined
         const hitWidth = Math.max(16 / Math.max(zoom, 0.05), thread.width + 8)
@@ -95,9 +96,8 @@ export default function ThreadsLayer({
         const labelY = curve.mid.y - 21
         const useGlow =
           settings.performance.effects &&
-          settings.objects.threadGlow &&
-          highlighted &&
-          settings.performance.quality !== 'low'
+          (visual === 'neon' ||
+            (settings.objects.threadGlow && highlighted && settings.performance.quality !== 'low'))
         const dimFactor = activeFocus
           ? 0.16
           : selectedCards.size > 0 && !relevant
@@ -110,13 +110,24 @@ export default function ThreadsLayer({
             key={thread.id}
             className={[
               'thread-group',
+              `thread-visual-${visual}`,
               dimmed ? 'is-dimmed' : '',
               highlighted ? 'is-highlighted' : '',
               selectedCards.size > 0 && !activeFocus && !relevant ? 'is-soft' : ''
             ].join(' ')}
             style={{ opacity: dimFactor * ghost }}
           >
-            {settings.performance.shadows && settings.performance.quality === 'high' && (
+            {visual === 'neon' && settings.performance.effects && (
+              <path
+                className="thread-path thread-neon-halo"
+                d={curve.path}
+                stroke={thread.color}
+                strokeWidth={thread.width + 4}
+                opacity={0.22}
+                style={{ filter: 'blur(3px)' }}
+              />
+            )}
+            {visual !== 'minimal' && settings.performance.shadows && settings.performance.quality === 'high' && (
               <path
                 className="thread-shadow"
                 d={curve.path}
@@ -128,10 +139,10 @@ export default function ThreadsLayer({
               className="thread-path"
               d={curve.path}
               stroke={thread.color}
-              strokeWidth={mode === 'overview' ? thread.width * 0.8 : thread.width}
+              strokeWidth={mode === 'overview' ? thread.width * 0.8 : visual === 'minimal' ? Math.max(1, thread.width * 0.75) : thread.width}
               strokeDasharray={dash}
               opacity={opacity}
-              style={useGlow ? { filter: 'url(#thread-glow)' } : undefined}
+              style={useGlow && visual === 'realistic' ? { filter: 'url(#thread-glow)' } : undefined}
             />
             <path
               className="thread-hit"

@@ -127,7 +127,7 @@ export interface BoardState {
   addStroke: (stroke: Stroke, record?: boolean) => void
   updateStroke: (id: string, patch: Partial<Stroke>, record?: boolean) => void
   deleteStrokes: (ids: string[]) => void
-  eraseStrokesAt: (point: Point, radius: number) => number
+  eraseStrokesAt: (point: Point, radius: number, shape?: 'circle' | 'square') => number
 
   /* groups */
   groupSelection: (title?: string) => string | null
@@ -1192,7 +1192,7 @@ export const useBoard = create<BoardState>((set, get) => {
       })
     },
 
-    eraseStrokesAt: (point, radius) => {
+    eraseStrokesAt: (point, radius, shape = 'circle') => {
       const state = get()
       const space = activeSpace(state)
       if (!space) return 0
@@ -1217,7 +1217,7 @@ export const useBoard = create<BoardState>((set, get) => {
               point.y <= bbox.y + bbox.h + radius
             : distanceToStroke(point, stroke) <= radius + stroke.width / 2
         if (!hit) continue
-        const result = splitStrokeAt(stroke, point, radius + stroke.width / 2)
+        const result = splitStrokeAt(stroke, point, radius + stroke.width / 2, shape)
         if (!result.removed) continue
         changed++
         delete strokes[stroke.id]

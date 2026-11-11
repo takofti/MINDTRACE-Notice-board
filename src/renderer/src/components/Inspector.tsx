@@ -28,6 +28,7 @@ import { useActiveSpace, useBoard } from '@/store/board'
 import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { openAsset, openExternal, revealAsset } from '@/services/storage'
+import { useT } from '@/i18n'
 
 const FONT_OPTIONS = [
   { label: 'Interface sans', value: 'Inter, "Segoe UI", sans-serif' },
@@ -45,6 +46,7 @@ export default function Inspector(): React.JSX.Element | null {
   const settings = useSettings((state) => state.settings)
   const updateSettings = useSettings((state) => state.update)
   const toast = useUi((state) => state.toast)
+  const t = useT()
   const [newCategory, setNewCategory] = useState('')
   const [showCategoryInput, setShowCategoryInput] = useState(false)
   if (!space) return null
@@ -60,7 +62,7 @@ export default function Inspector(): React.JSX.Element | null {
   const title = cards.length
     ? cards.length > 1
       ? `${cards.length} cards`
-      : cards[0].title || kindLabel(cards[0].kind)
+      : cards[0].title || t(kindLabel(cards[0].kind))
     : threads.length
       ? threads.length > 1
         ? `${threads.length} threads`
@@ -78,7 +80,7 @@ export default function Inspector(): React.JSX.Element | null {
   const kicker = cards.length
     ? cards.length > 1
       ? 'MATERIALS'
-      : kindLabel(cards[0].kind).toUpperCase()
+      : t(kindLabel(cards[0].kind)).toUpperCase()
     : threads.length
       ? 'CONNECTION'
       : strokes.length
@@ -101,7 +103,7 @@ export default function Inspector(): React.JSX.Element | null {
           </div>
         </div>
         <div className="head-actions">
-          <button className="icon-btn" onClick={clear} title="Clear selection (Esc)">
+          <button className="icon-btn" onClick={clear} title={t('Cancel / deselect')}>
             <X size={15} />
           </button>
         </div>
@@ -134,46 +136,46 @@ export default function Inspector(): React.JSX.Element | null {
         )}
 
         <div className="inspector-section">
-          <div className="section-title">Canvas</div>
+          <div className="section-title">{t('Canvas')}</div>
           <div className="inspector-actions">
             <button
               className="btn btn-sm"
               onClick={() =>
                 updateSettings('ui', { showInspector: !settings.ui.showInspector })
               }
-              title="Hide / show inspector panel"
+              title={t('Hide / show inspector panel')}
             >
-              {settings.ui.showInspector ? 'Hide inspector' : 'Show inspector'}
+              {settings.ui.showInspector ? t('Hide inspector') : t('Show inspector')}
             </button>
             <button className="btn btn-sm" onClick={() => useUi.getState().openModal('settings', 'objects')}>
-              Object defaults
+              {t('Object defaults')}
             </button>
           </div>
         </div>
       </div>
 
       <div className="inspector-foot">
-        <button className="btn btn-sm" onClick={() => toast('Everything is undoable — Ctrl+Z', 'info', 1800)}>
-          <RotateCcw size={11} /> Undoable
+        <button className="btn btn-sm" onClick={() => toast(t('Everything is undoable — Ctrl+Z'), 'info', 1800)}>
+          <RotateCcw size={11} /> {t('Undoable')}
         </button>
         <button
           className="btn btn-sm"
           style={{ marginLeft: 'auto' }}
           onClick={() => {
             board.duplicateSelection()
-            toast('Duplicated', 'success', 1200)
+            toast(t('Duplicated'), 'success', 1200)
           }}
         >
-          <Copy size={11} /> Duplicate
+          <Copy size={11} /> {t('Duplicate')}
         </button>
         <button
           className="btn btn-sm btn-danger"
           onClick={() => {
             board.deleteSelection()
-            toast('Deleted — Ctrl+Z to restore', 'info', 1800)
+            toast(t('Deleted — Ctrl+Z to restore'), 'info', 1800)
           }}
         >
-          <Trash2 size={11} /> Delete
+          <Trash2 size={11} /> {t('Delete')}
         </button>
       </div>
     </aside>
@@ -226,6 +228,7 @@ function CardsPanel({
 }): React.JSX.Element {
   const board = useBoard()
   const settings = useSettings((state) => state.settings)
+  const t = useT()
   const single = cards.length === 1 ? cards[0] : null
   const cardIds = cards.map((card) => card.id)
   const allCategories = categories
@@ -253,10 +256,10 @@ function CardsPanel({
       <div className="inspector-section">
         {single && (single.kind === 'text' || single.kind === 'note') && (
           <div className="field-col">
-            <span className="field-label">Title</span>
+            <span className="field-label">{t('Title')}</span>
             <TextInput
               value={single.title}
-              placeholder={single.kind === 'note' ? 'Note title (optional)' : 'Card title'}
+              placeholder={single.kind === 'note' ? t('Note title (optional)') : t('Card title')}
               onFocus={() => begin('Edit title')}
               onChange={(value) => board.updateCard(single.id, { title: value })}
               onBlur={commit}
@@ -268,26 +271,26 @@ function CardsPanel({
                 board.setEditingCard(single.id)
               }}
             >
-              <Pencil size={11} /> Edit text on board
+              <Pencil size={11} /> {t('Edit text on board')}
             </button>
           </div>
         )}
 
         {single && (single.kind === 'image' || single.kind === 'video' || single.kind === 'audio' || single.kind === 'pdf' || single.kind === 'doc' || single.kind === 'file') && (
           <div className="field-col">
-            <span className="field-label">Material</span>
+            <span className="field-label">{t('Material')}</span>
             <div className="file-name" style={{ fontSize: 11 }}>
-              {single.assetName || single.title || 'Untitled material'}
+              {single.assetName || single.title || t('Untitled')}
             </div>
             <div className="hint-text" style={{ marginTop: 2 }}>
-              {single.mime || 'Unknown type'}
+              {single.mime || t('Unknown type')}
             </div>
             <div style={{ display: 'flex', gap: 5, marginTop: 8 }}>
               <button className="btn btn-sm" onClick={() => single.assetUrl && void openAsset(single.assetUrl)}>
-                <ExternalIcon /> Open
+                <ExternalIcon /> {t('Open')}
               </button>
               <button className="btn btn-sm" onClick={() => single.assetUrl && void revealAsset(single.assetUrl)}>
-                Show in folder
+                {t('Show in folder')}
               </button>
             </div>
           </div>
@@ -295,30 +298,30 @@ function CardsPanel({
 
         {single && single.kind === 'image' && (
           <div className="field-col" style={{ marginTop: 12 }}>
-            <span className="field-label">Caption</span>
+            <span className="field-label">{t('Caption')}</span>
             <textarea
               className="textarea"
               value={single.caption ?? ''}
-              placeholder="What does this image show?"
+              placeholder={t('What does this image show?')}
               onFocus={() => begin('Edit caption')}
               onChange={(event) => board.updateCard(single.id, { caption: event.target.value })}
               onBlur={commit}
               rows={2}
             />
             <div className="field-row" style={{ marginTop: 7 }}>
-              <span className="hint-text">Fit</span>
+              <span className="hint-text">{t('Fit')}</span>
               <div className="mode-switch" style={{ height: 26 }}>
                 <button
                   className={(single.style?.imageFit ?? settings.objects.imageFit) === 'cover' ? 'is-active' : ''}
                   onClick={() => board.updateCard(single.id, { style: { ...single.style, imageFit: 'cover' } }, true)}
                 >
-                  Cover
+                  {t('Cover')}
                 </button>
                 <button
                   className={(single.style?.imageFit ?? settings.objects.imageFit) === 'contain' ? 'is-active' : ''}
                   onClick={() => board.updateCard(single.id, { style: { ...single.style, imageFit: 'contain' } }, true)}
                 >
-                  Contain
+                  {t('Contain')}
                 </button>
               </div>
             </div>
@@ -327,7 +330,7 @@ function CardsPanel({
 
         {single && single.kind === 'link' && (
           <div className="field-col">
-            <span className="field-label">Web address</span>
+            <span className="field-label">{t('Web address')}</span>
             <TextInput
               value={single.assetUrl ?? ''}
               placeholder="https://…"
@@ -340,23 +343,23 @@ function CardsPanel({
               style={{ marginTop: 7, alignSelf: 'flex-start' }}
               onClick={() => single.assetUrl && void openExternal(single.assetUrl)}
             >
-              Open link
+              {t('Open link')}
             </button>
           </div>
         )}
 
         {!single && (
           <div className="field-col">
-            <span className="field-label">{cards.length} selected cards</span>
+            <span className="field-label">{t('{count} selected cards', { count: cards.length })}</span>
             <p className="multi-note" style={{ margin: 0 }}>
-              Changes below apply to every selected card. Individual text is preserved.
+              {t('Changes below apply to every selected card. Individual text is preserved.')}
             </p>
           </div>
         )}
       </div>
 
       <div className="inspector-section">
-        <div className="section-title">Position &amp; size</div>
+        <div className="section-title">{t('Position & size')}</div>
         <div className="transform-grid">
           <NumberField
             label="X"
@@ -400,15 +403,14 @@ function CardsPanel({
           />
         </div>
         <div className="hint-text" style={{ marginTop: 7 }}>
-          Drag the card or its corner handles on the board. Nothing snaps unless you enable it in
-          Settings → Interaction.
+          {t('Drag the card or its corner handles on the board. Nothing snaps unless you enable it in Settings → Interaction.')}
         </div>
       </div>
 
       <div className="inspector-section">
-        <div className="section-title">Appearance</div>
+        <div className="section-title">{t('Appearance')}</div>
         <div className="field-col">
-          <span className="field-label">Background</span>
+          <span className="field-label">{t('Background')}</span>
           <div className="style-swatches">
             {(noteMode ? NOTE_PALETTE : CARD_PALETTE).map((color) => (
               <button
@@ -424,13 +426,13 @@ function CardsPanel({
               className="color-input"
               value={normalizeColor(backgroundColor)}
               onChange={(event) => updateAll({ color: event.target.value }, true)}
-              title="Custom background"
+              title={t('Custom colour')}
             />
           </div>
         </div>
 
         <div className="field-row" style={{ marginTop: 10 }}>
-          <span className="field-label">Corner radius</span>
+          <span className="field-label">{t('Corner radius')}</span>
           <RangeField
             value={Number(styleOf('radius') ?? settings.objects.cardRadius)}
             min={0}
@@ -443,7 +445,7 @@ function CardsPanel({
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Opacity</span>
+          <span className="field-label">{t('Opacity')}</span>
           <RangeField
             value={Number(styleOf('opacity') ?? settings.objects.cardOpacity)}
             min={0.2}
@@ -456,7 +458,7 @@ function CardsPanel({
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Font size</span>
+          <span className="field-label">{t('Font size')}</span>
           <RangeField
             value={Number(styleOf('fontSize') ?? settings.objects.cardFontSize)}
             min={10}
@@ -469,7 +471,7 @@ function CardsPanel({
           />
         </div>
         <div className="field-row" style={{ marginTop: 5 }}>
-          <span className="field-label">Shadow</span>
+          <span className="field-label">{t('Shadow')}</span>
           <button
             className={`toggle ${(styleOf('shadow') ?? true) ? 'is-on' : ''}`}
             onClick={() =>
@@ -482,7 +484,7 @@ function CardsPanel({
         {single && (
           <>
             <div className="field-col" style={{ marginTop: 10 }}>
-              <span className="field-label">Text colour</span>
+              <span className="field-label">{t('Text colour')}</span>
               <div className="style-swatches">
                 {TEXT_COLORS.map((color) => (
                   <button
@@ -510,7 +512,7 @@ function CardsPanel({
               </div>
             </div>
             <div className="field-col" style={{ marginTop: 10 }}>
-              <span className="field-label">Typeface</span>
+              <span className="field-label">{t('Typeface')}</span>
               <select
                 className="select"
                 value={single.style?.fontFamily ?? settings.objects.cardFontFamily}
@@ -526,7 +528,7 @@ function CardsPanel({
               </select>
             </div>
             <div className="field-row" style={{ marginTop: 9 }}>
-              <span className="field-label">Alignment</span>
+              <span className="field-label">{t('Alignment')}</span>
               <div className="mode-switch" style={{ height: 26 }}>
                 {[
                   { value: 'left', icon: AlignLeft },
@@ -558,13 +560,13 @@ function CardsPanel({
 
       <div className="inspector-section">
         <div className="section-title">
-          Categories
+          {t('Categories')}
           <span className="spacer" />
           <button
             className="icon-btn"
             style={{ width: 20, height: 20 }}
             onClick={() => setShowCategoryInput(!showCategoryInput)}
-            title="New category"
+            title={t('New category')}
           >
             <Plus size={12} />
           </button>
@@ -592,14 +594,14 @@ function CardsPanel({
               </button>
             )
           })}
-          {!allCategories.length && <span className="hint-text">No categories yet. Create one above.</span>}
+          {!allCategories.length && <span className="hint-text">{t('No categories yet. Create one above.')}</span>}
         </div>
         {showCategoryInput && (
           <div className="row" style={{ display: 'flex', gap: 5, marginTop: 8 }}>
             <input
               className="input"
               value={newCategory}
-              placeholder="Category name"
+              placeholder={t('Category name')}
               autoFocus
               onChange={(event) => setNewCategory(event.target.value)}
               onKeyDown={(event) => {
@@ -638,45 +640,45 @@ function CardsPanel({
                 }
               }}
             >
-              Add
+              {t('Add')}
             </button>
           </div>
         )}
       </div>
 
       <div className="inspector-section">
-        <div className="section-title">Pins &amp; threads</div>
-        {single ? <PinsPanel card={single} /> : <p className="multi-note">Select one card to inspect its pins.</p>}
+        <div className="section-title">{t('Pins & threads')}</div>
+        {single ? <PinsPanel card={single} /> : <p className="multi-note">{t('Select one card to inspect its pins.')}</p>}
       </div>
 
       <div className="inspector-section">
-        <div className="section-title">Arrange</div>
+        <div className="section-title">{t('Arrange')}</div>
         <div className="inspector-actions">
           <button className="btn btn-sm" onClick={() => board.bringForward('front')}>
-            <ChevronsUp size={11} /> Bring front
+            <ChevronsUp size={11} /> {t('Bring front')}
           </button>
           <button className="btn btn-sm" onClick={() => board.bringForward('back')}>
-            <ChevronsDown size={11} /> Send back
+            <ChevronsDown size={11} /> {t('Send back')}
           </button>
           <button className="btn btn-sm" onClick={() => board.bringForward('forward')}>
-            <ArrowUp size={11} /> Forward
+            <ArrowUp size={11} /> {t('Forward')}
           </button>
           <button className="btn btn-sm" onClick={() => board.bringForward('backward')}>
-            <ArrowDown size={11} /> Backward
+            <ArrowDown size={11} /> {t('Backward')}
           </button>
           <button className="btn btn-sm" onClick={() => board.toggleLockSelection()}>
             {(single?.locked ? <Unlock size={11} /> : <Lock size={11} />)}
-            {single?.locked ? 'Unlock' : 'Lock'}
+            {single?.locked ? t('Unlock') : t('Lock')}
           </button>
           <button className="btn btn-sm" onClick={() => board.toggleHiddenSelection()}>
             {(single?.hidden ? <Eye size={11} /> : <EyeOff size={11} />)}
-            {single?.hidden ? 'Show' : 'Hide'}
+            {single?.hidden ? t('Show') : t('Hide')}
           </button>
           <button className="btn btn-sm" onClick={() => board.groupSelection()}>
-            <Layers size={11} /> Group
+            <Layers size={11} /> {t('Group')}
           </button>
           <button className="btn btn-sm" onClick={() => board.duplicateSelection()}>
-            <Copy size={11} /> Duplicate
+            <Copy size={11} /> {t('Duplicate')}
           </button>
         </div>
       </div>
@@ -687,6 +689,7 @@ function CardsPanel({
 function PinsPanel({ card }: { card: Card }): React.JSX.Element {
   const space = useActiveSpace()
   const board = useBoard()
+  const t = useT()
   const pinsUsed = useMemo(() => {
     if (!space) return 0
     let count = 0
@@ -698,11 +701,11 @@ function PinsPanel({ card }: { card: Card }): React.JSX.Element {
   return (
     <>
       <div className="field-row">
-        <span className="field-label">Threads attached</span>
+        <span className="field-label">{t('Threads attached')}</span>
         <span className="kind-pill">{pinsUsed}</span>
       </div>
       <div className="field-row">
-        <span className="field-label">Custom pins</span>
+        <span className="field-label">{t('Custom pins')}</span>
         <span className="kind-pill">{card.pins.length}</span>
       </div>
       {card.pins.length > 0 && (
@@ -716,7 +719,7 @@ function PinsPanel({ card }: { card: Card }): React.JSX.Element {
               <button
                 className="icon-btn"
                 style={{ width: 20, height: 20 }}
-                title="Remove pin and its threads"
+                title={t('Remove pin and its threads')}
                 onClick={() => board.removePin(card.id, pin.id)}
               >
                 <X size={11} />
@@ -726,8 +729,7 @@ function PinsPanel({ card }: { card: Card }): React.JSX.Element {
         </div>
       )}
       <div className="hint-text" style={{ marginTop: 8, lineHeight: 1.5 }}>
-        Hover the card and drag from a pin to tie a thread. Hold <span className="kbd">Alt</span> and click
-        anywhere on the card to place a new pin at that exact point.
+        {t('Hover the card and drag from a pin to tie a thread. Hold Alt and click anywhere on the card to place a new pin at that exact point.')}
       </div>
     </>
   )
@@ -747,6 +749,7 @@ function ThreadsPanel({
   const board = useBoard()
   const space = useActiveSpace()
   const settings = useSettings((state) => state.settings)
+  const t = useT()
   const single = threads.length === 1 ? threads[0] : null
   const ids = threads.map((thread) => thread.id)
   const thread = single
@@ -774,20 +777,20 @@ function ThreadsPanel({
             </svg>
           </div>
           <div className="field-row" style={{ marginTop: 9 }}>
-            <span className="field-label">From</span>
-            <span className="hint-text">{fromCard?.title || fromCard?.assetName || 'Unknown card'}</span>
+            <span className="field-label">{t('From')}</span>
+            <span className="hint-text">{fromCard?.title || fromCard?.assetName || t('Unknown card')}</span>
           </div>
           <div className="field-row">
-            <span className="field-label">To</span>
-            <span className="hint-text">{toCard?.title || toCard?.assetName || 'Unknown card'}</span>
+            <span className="field-label">{t('To')}</span>
+            <span className="hint-text">{toCard?.title || toCard?.assetName || t('Unknown card')}</span>
           </div>
         </div>
       )}
 
       <div className="inspector-section">
-        <div className="section-title">Thread appearance</div>
+        <div className="section-title">{t('Thread appearance')}</div>
         <div className="field-col">
-          <span className="field-label">Colour</span>
+          <span className="field-label">{t('Colour')}</span>
           <div className="style-swatches">
             {THREAD_PALETTE.map((color) => (
               <button
@@ -806,7 +809,7 @@ function ThreadsPanel({
           </div>
         </div>
         <div className="field-row" style={{ marginTop: 10 }}>
-          <span className="field-label">Thickness</span>
+          <span className="field-label">{t('Thickness')}</span>
           <RangeField
             value={commonWidth ?? settings.objects.threadWidth}
             min={1}
@@ -819,7 +822,7 @@ function ThreadsPanel({
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Opacity</span>
+          <span className="field-label">{t('Opacity')}</span>
           <RangeField
             value={single?.opacity ?? settings.objects.threadOpacity}
             min={0.2}
@@ -834,7 +837,7 @@ function ThreadsPanel({
         {single && (
           <>
             <div className="field-row">
-              <span className="field-label">Curve</span>
+              <span className="field-label">{t('Curve')}</span>
               <RangeField
                 value={single.curve}
                 min={-1}
@@ -847,7 +850,7 @@ function ThreadsPanel({
               />
             </div>
             <div className="field-col" style={{ marginTop: 8 }}>
-              <span className="field-label">Style</span>
+              <span className="field-label">{t('Style')}</span>
               <select
                 className="select"
                 value={single.style}
@@ -855,16 +858,16 @@ function ThreadsPanel({
                   board.updateThreads(ids, { style: event.target.value as Thread['style'] }, true)
                 }
               >
-                <option value="thread">Thread</option>
-                <option value="dashed">Dashed</option>
-                <option value="dotted">Dotted</option>
+                <option value="thread">{t('Thread')}</option>
+                <option value="dashed">{t('Dashed')}</option>
+                <option value="dotted">{t('Dotted')}</option>
               </select>
             </div>
             <div className="field-col" style={{ marginTop: 8 }}>
-              <span className="field-label">Label</span>
+              <span className="field-label">{t('Label')}</span>
               <TextInput
                 value={single.label ?? ''}
-                placeholder="Optional label on thread"
+                placeholder={t('Optional label on thread')}
                 onFocus={() => begin('Edit thread label')}
                 onChange={(value) => board.updateThread(ids[0], { label: value })}
                 onBlur={commit}
@@ -873,7 +876,7 @@ function ThreadsPanel({
           </>
         )}
         <div className="field-row" style={{ marginTop: 9 }}>
-          <span className="field-label">Hide thread</span>
+          <span className="field-label">{t('Hide thread')}</span>
           <button
             className={`toggle ${threads.every((item) => item.hidden) ? 'is-on' : ''}`}
             onClick={() => board.hideThreads(ids, !threads.every((item) => item.hidden))}
@@ -883,7 +886,7 @@ function ThreadsPanel({
       </div>
 
       <div className="inspector-section">
-        <div className="section-title">Trace</div>
+        <div className="section-title">{t('Trace')}</div>
         <div className="inspector-actions">
           <button
             className="btn btn-sm"
@@ -892,10 +895,10 @@ function ThreadsPanel({
               board.selectConnected(settings.interaction.focusDepth)
             }}
           >
-            <Focus size={11} /> Select chain
+            <Focus size={11} /> {t('Select chain')}
           </button>
           <button className="btn btn-sm" onClick={() => board.selectAll()}>
-            Select all
+            {t('Select all')}
           </button>
         </div>
         <button
@@ -903,7 +906,7 @@ function ThreadsPanel({
           style={{ marginTop: 8, width: '100%' }}
           onClick={() => board.deleteThreads(ids)}
         >
-          <Trash2 size={11} /> Remove connection
+          <Trash2 size={11} /> {t('Remove connection')}
         </button>
       </div>
     </>
@@ -923,22 +926,23 @@ function StrokesPanel({
 }): React.JSX.Element {
   const board = useBoard()
   const settings = useSettings((state) => state.settings)
+  const t = useT()
   const ids = strokes.map((stroke) => stroke.id)
   const single = strokes.length === 1 ? strokes[0] : null
   return (
     <>
       <div className="inspector-section">
-        <div className="section-title">Drawing</div>
+        <div className="section-title">{t('Drawing')}</div>
         <div className="field-row">
-          <span className="field-label">Tool</span>
-          <span className="kind-pill">{single?.tool ?? `${strokes.length} drawings`}</span>
+          <span className="field-label">{t('Tool')}</span>
+          <span className="kind-pill">{single?.tool ?? t('{count} drawings', { count: strokes.length })}</span>
         </div>
         <div className="field-row">
-          <span className="field-label">Points</span>
+          <span className="field-label">{t('Points')}</span>
           <span className="kind-pill">{single ? Math.floor(single.points.length / 2) : '—'}</span>
         </div>
         <div className="field-col" style={{ marginTop: 9 }}>
-          <span className="field-label">Ink colour</span>
+          <span className="field-label">{t('Ink colour')}</span>
           <div className="style-swatches">
             {['#e9e6dd', '#c8553d', '#c99a3d', '#5b8db8', '#6e9c73', '#a06aa8', '#8d94a0', '#1b1c20'].map(
               (color) => (
@@ -962,7 +966,7 @@ function StrokesPanel({
           </div>
         </div>
         <div className="field-row" style={{ marginTop: 9 }}>
-          <span className="field-label">Width</span>
+          <span className="field-label">{t('Width')}</span>
           <RangeField
             value={single?.width ?? settings.objects.drawWidth}
             min={1}
@@ -977,7 +981,7 @@ function StrokesPanel({
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Opacity</span>
+          <span className="field-label">{t('Opacity')}</span>
           <RangeField
             value={single?.opacity ?? settings.objects.drawOpacity}
             min={0.1}
@@ -992,14 +996,14 @@ function StrokesPanel({
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Locked</span>
+          <span className="field-label">{t('Locked')}</span>
           <button
             className={`toggle ${strokes.every((stroke) => stroke.locked) ? 'is-on' : ''}`}
             onClick={() => board.toggleLockSelection()}
           />
         </div>
         <div className="field-row">
-          <span className="field-label">Hidden</span>
+          <span className="field-label">{t('Hidden')}</span>
           <button
             className={`toggle ${strokes.every((stroke) => stroke.hidden) ? 'is-on' : ''}`}
             onClick={() => {
@@ -1015,7 +1019,7 @@ function StrokesPanel({
           style={{ width: '100%' }}
           onClick={() => board.deleteStrokes(ids)}
         >
-          <Trash2 size={11} /> Erase drawing
+          <Trash2 size={11} /> {t('Erase drawing')}
         </button>
       </div>
     </>
@@ -1035,6 +1039,7 @@ function GroupsPanel({
 }): React.JSX.Element {
   const board = useBoard()
   const space = useActiveSpace()
+  const t = useT()
   const single = groups.length === 1 ? groups[0] : null
   const members = single && space ? Object.values(space.cards).filter((card) => card.groupId === single.id) : []
   return (
@@ -1042,7 +1047,7 @@ function GroupsPanel({
       <div className="inspector-section">
         {single && (
           <div className="field-col">
-            <span className="field-label">Group title</span>
+            <span className="field-label">{t('Group title')}</span>
             <TextInput
               value={single.title}
               onFocus={() => begin('Rename group')}
@@ -1052,11 +1057,11 @@ function GroupsPanel({
           </div>
         )}
         <div className="field-row" style={{ marginTop: 9 }}>
-          <span className="field-label">Cards</span>
+          <span className="field-label">{t('Cards')}</span>
           <span className="kind-pill">{single ? members.length : groups.length}</span>
         </div>
         <div className="field-row">
-          <span className="field-label">Collapsed</span>
+          <span className="field-label">{t('Collapsed')}</span>
           <button
             className={`toggle ${groups.every((group) => group.collapsed) ? 'is-on' : ''}`}
             onClick={() => {
@@ -1069,7 +1074,7 @@ function GroupsPanel({
           />
         </div>
         <div className="field-col" style={{ marginTop: 9 }}>
-          <span className="field-label">Group colour</span>
+          <span className="field-label">{t('Group colour')}</span>
           <div className="style-swatches">
             {THREAD_PALETTE.map((color) => (
               <button
@@ -1093,11 +1098,11 @@ function GroupsPanel({
               board.setSelection({ cards: members.map((card) => card.id) })
             }}
           >
-            Select member cards
+            {t('Select member cards')}
           </button>
           <button className="btn btn-sm" onClick={() => board.toggleLockSelection()}>
             {groups.every((group) => group.locked) ? <Unlock size={11} /> : <Lock size={11} />}
-            Lock group
+            {t('Lock group')}
           </button>
         </div>
         <button
@@ -1105,7 +1110,7 @@ function GroupsPanel({
           style={{ width: '100%', marginTop: 8 }}
           onClick={() => board.ungroup(groups.map((group) => group.id))}
         >
-          Ungroup (keep cards)
+          {t('Ungroup (keep cards)')}
         </button>
       </div>
     </>

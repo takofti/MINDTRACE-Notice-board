@@ -20,6 +20,7 @@ import { useBoard } from '@/store/board'
 import { useUi } from '@/store/ui'
 import { useSettings } from '@/store/settings'
 import { isElectron, windowControls } from '@/services/storage'
+import { useT } from '@/i18n'
 
 const MODES: { id: SpaceMode; label: string; icon: typeof LayoutGrid }[] = [
   { id: 'normal', label: 'Board', icon: LayoutGrid },
@@ -40,10 +41,12 @@ export default function TitleBar(): React.JSX.Element {
   const filter = useBoard((state) => state.filter)
   const openModal = useUi((state) => state.openModal)
   const openContextMenu = useUi((state) => state.openContextMenu)
+  const openHome = useUi((state) => state.openHome)
   const renameRequest = useUi((state) => state.renameSpaceId)
   const setRenameRequest = useUi((state) => state.setRenameSpaceId)
   const showMinimap = useSettings((state) => state.settings.board.showMinimap)
   const showInspector = useSettings((state) => state.settings.ui.showInspector)
+  const t = useT()
   const [maximized, setMaximized] = useState(false)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -83,17 +86,29 @@ export default function TitleBar(): React.JSX.Element {
   const filterActive = filter.active && Boolean(filter.query || filter.categories.length || filter.kinds.length)
 
   return (
-    <header className="titlebar">
-      <div className="brand" title="Mindtrace — investigation workspace">
+    <header
+      className="titlebar"
+      onDoubleClick={(event) => {
+        if ((event.target as HTMLElement).closest('button, input, textarea, select, [contenteditable="true"]')) return
+        if (!isElectron) return
+        windowControls.toggleMaximize()
+        setMaximized(!maximized)
+      }}
+    >
+      <button
+        className="brand no-drag"
+        title={t('Home')}
+        onClick={openHome}
+      >
         <span className="brand-mark">M</span>
         <span className="brand-name">MINDTRACE</span>
-      </div>
+      </button>
       <div className="title-divider" />
 
       <button
         className="project-button no-drag"
         onClick={() => openModal('projects')}
-        title={project.description || 'Open project manager'}
+        title={project.description || t('Open project manager')}
       >
         <span className="project-name">{project.name}</span>
         <ChevronDown size={12} className="chevron" />
@@ -153,7 +168,7 @@ export default function TitleBar(): React.JSX.Element {
               }, 30)
             }
           }}
-          title="New space"
+          title={t('New space')}
         >
           <Plus size={13} />
         </button>
@@ -162,21 +177,21 @@ export default function TitleBar(): React.JSX.Element {
       <div className="title-actions no-drag">
         <div
           className={`save-status ${saveState}`}
-          title={lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : 'Project loaded'}
+          title={lastSavedAt ? t('Last saved {date}', { date: new Date(lastSavedAt).toLocaleString() }) : t('Project loaded')}
         >
           <span className="dot" />
           <span>
             {saveState === 'saving'
-              ? 'Saving'
+              ? t('Saving')
               : saveState === 'error'
-                ? 'Save failed'
+                ? t('Save failed')
                 : lastSavedAt
-                  ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : 'Loaded'}
+                  ? `${t('Saved')} ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : t('Loaded')}
           </span>
         </div>
 
-        <div className="mode-switch" title="View mode (F cycles)">
+        <div className="mode-switch" title={t('View mode (F cycles)')}>
           {MODES.map((item) => {
             const Icon = item.icon
             return (
@@ -186,46 +201,46 @@ export default function TitleBar(): React.JSX.Element {
                 onClick={() => setMode(item.id)}
               >
                 <Icon size={12} />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
               </button>
             )
           })}
         </div>
 
-        <button className="icon-btn" onClick={() => openModal('search')} title="Search (Ctrl+K)">
+        <button className="icon-btn" onClick={() => openModal('search')} title={t('Search (Ctrl+K)')}>
           <Search size={15} />
         </button>
         <button
           className={`icon-btn ${filterActive ? 'is-active' : ''}`}
           onClick={() => openModal('filters')}
-          title="Filter cards and materials"
+          title={t('Filter cards and materials')}
         >
           <Filter size={15} />
         </button>
         <button
           className={`icon-btn ${showMinimap ? 'is-active' : ''}`}
           onClick={() => useSettings.getState().update('board', { showMinimap: !showMinimap })}
-          title="Toggle minimap"
+          title={t('Toggle minimap')}
         >
           <Scan size={15} />
         </button>
         <button
           className={`icon-btn ${showInspector ? 'is-active' : ''}`}
           onClick={() => useSettings.getState().update('ui', { showInspector: !showInspector })}
-          title="Toggle inspector panel"
+          title={t('Toggle inspector panel')}
         >
           <PanelRight size={15} />
         </button>
-        <button className="icon-btn" onClick={() => openModal('export')} title="Export board (Ctrl+E)">
+        <button className="icon-btn" onClick={() => openModal('export')} title={t('Export board (Ctrl+E)')}>
           <Download size={15} />
         </button>
-        <button className="icon-btn" onClick={() => openModal('settings')} title="Settings (Ctrl+,)">
+        <button className="icon-btn" onClick={() => openModal('settings')} title={t('Settings (Ctrl+,)')}>
           <Settings size={15} />
         </button>
 
         {isElectron && (
           <div className="window-controls">
-            <button onClick={() => windowControls.minimize()} title="Minimize">
+            <button onClick={() => windowControls.minimize()} title={t('Minimize')}>
               <Minus size={14} />
             </button>
             <button
@@ -233,11 +248,11 @@ export default function TitleBar(): React.JSX.Element {
                 windowControls.toggleMaximize()
                 setMaximized(!maximized)
               }}
-              title={maximized ? 'Restore' : 'Maximize'}
+              title={maximized ? t('Restore') : t('Maximize')}
             >
               {maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
             </button>
-            <button className="close-window" onClick={() => windowControls.close()} title="Close">
+            <button className="close-window" onClick={() => windowControls.close()} title={t('Close')}>
               <X size={15} />
             </button>
           </div>

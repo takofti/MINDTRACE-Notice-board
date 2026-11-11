@@ -35,6 +35,7 @@ export type ToolId =
   | 'arrow'
   | 'rect'
   | 'ellipse'
+  | 'thread'
 
 /** Anchor ids are stable, implicit positions around a card perimeter. */
 export const ANCHOR_IDS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
@@ -58,6 +59,9 @@ export interface CardStyle {
   fontFamily?: string
   align?: 'left' | 'center' | 'right'
   imageFit?: 'cover' | 'contain'
+  bold?: boolean
+  italic?: boolean
+  lineHeight?: number
 }
 
 export interface Card {
@@ -103,6 +107,9 @@ export interface Thread {
   curve: number
   opacity?: number
   hidden?: boolean
+  visualStyle?: 'minimal' | 'neon' | 'realistic'
+  connectionType?: 'curved' | 'straight' | 'elbow'
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
   createdAt: number
 }
 
@@ -122,6 +129,11 @@ export interface Stroke {
   seed: number
   locked?: boolean
   hidden?: boolean
+  fill?: string
+  fillOpacity?: number
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
+  cornerRadius?: number
+  smoothing?: number
   createdAt: number
 }
 
@@ -183,6 +195,16 @@ export interface ProjectSummary {
   spaceCount: number
   /** Path of the project folder, for diagnostics. */
   path?: string
+}
+
+export interface TemplateSummary {
+  id: string
+  name: string
+  description: string
+  createdAt: number
+  cardCount: number
+  spaceCount: number
+  custom: boolean
 }
 
 export interface StorageSnapshot {

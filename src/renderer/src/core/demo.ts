@@ -353,7 +353,7 @@ export function createDemoProject(): Project {
     0.55
   )
   firstSpace.strokes = { [circle.id]: circle, [arrow.id]: arrow }
-  firstSpace.camera = { x: 165, y: 205, zoom: 0.68 }
+  firstSpace.camera = { x: 165, y: 165, zoom: 0.66 }
   firstSpace.updatedAt = Date.now()
 
   const research = newSpace('Research · Deep sea signals', { x: 0, y: 20, zoom: 0.9 })

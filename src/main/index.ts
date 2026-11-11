@@ -17,7 +17,8 @@ import {
   type Project,
   type ProjectFile,
   type ProjectSummary,
-  type StorageSnapshot
+  type StorageSnapshot,
+  type TemplateSummary
 } from '@shared/types'
 import { mergeSettings, DEFAULT_SETTINGS, type SettingsFile } from '@shared/settings'
 
@@ -39,6 +40,10 @@ function projectsRoot(): string {
   return join(dataRoot, 'projects')
 }
 
+function templatesRoot(): string {
+  return join(dataRoot, 'templates')
+}
+
 function projectDir(id: string): string {
   assertId(id)
   return join(projectsRoot(), id)
@@ -58,6 +63,10 @@ function backupsDir(id: string): string {
 
 function assertId(id: string): void {
   if (!/^[a-zA-Z0-9_-]{6,64}$/.test(id)) throw new Error('Invalid project id')
+}
+
+function assertTemplateId(id: string): void {
+  if (!/^tpl_[a-zA-Z0-9_-]{6,64}$/.test(id)) throw new Error('Invalid template id')
 }
 
 function safeName(name: string): string {
@@ -260,6 +269,84 @@ async function duplicateProject(id: string): Promise<Project> {
 
 async function removeProject(id: string): Promise<void> {
   await fs.rm(projectDir(id), { recursive: true, force: true })
+}
+
+/* ------------------------------- templates ------------------------------ */
+
+function templateDir(id: string): string {
+  assertTemplateId(id)
+  return join(templatesRoot(), id)
+}
+
+async function listTemplates(): Promise<TemplateSummary[]> {
+  await ensureDir(templatesRoot())
+  const dirs = await fs.readdir(templatesRoot(), { withFileTypes: true })
+  const out: TemplateSummary[] = []
+  for (const dir of dirs) {
+    if (!dir.isDirectory()) continue
+    const meta = readJson<TemplateSummary & { sourceProjectId?: string }>(join(templatesRoot(), dir.name, 'template.json'))
+    if (meta) out.push({ ...meta, custom: true })
+  }
+  return out.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+async function saveTemplateFromProject(
+  projectId: string,
+  name: string,
+  description: string
+): Promise<TemplateSummary> {
+  assertId(projectId)
+  const project = readJson<Project>(projectFile(projectId))
+  if (!project) throw new Error('Project not found')
+  const id = `tpl_${randomUUID().replace(/-/g, '').slice(0, 18)}`
+  const dir = templateDir(id)
+  await ensureDir(dir)
+  await ensureDir(join(dir, 'assets'))
+  await fs.copyFile(projectFile(projectId), join(dir, 'project.json'))
+  await fs.cp(assetsDir(projectId), join(dir, 'assets'), { recursive: true, force: true }).catch(() => undefined)
+  let cards = 0
+  for (const space of project.spaces) cards += Object.keys(space.cards).length
+  const summary: TemplateSummary = {
+    id,
+    name: safeName(name).slice(0, 120) || project.name,
+    description: description.slice(0, 400),
+    createdAt: Date.now(),
+    cardCount: cards,
+    spaceCount: project.spaces.length,
+    custom: true
+  }
+  await writeJsonAtomic(join(dir, 'template.json'), summary)
+  return summary
+}
+
+async function instantiateTemplate(templateId: string, name: string): Promise<Project> {
+  assertTemplateId(templateId)
+  const dir = templateDir(templateId)
+  const source = readJson<Project>(join(dir, 'project.json'))
+  if (!source) throw new Error('Template project could not be read')
+  const newId = `prj_${randomUUID().replace(/-/g, '').slice(0, 18)}`
+  await ensureDir(projectDir(newId))
+  await ensureDir(assetsDir(newId))
+  await fs.cp(join(dir, 'assets'), assetsDir(newId), { recursive: true, force: true }).catch(() => undefined)
+  const oldId = source.id
+  const project: Project = structuredClone(source)
+  project.id = newId
+  project.name = projectLabel(name || source.name)
+  project.createdAt = Date.now()
+  project.updatedAt = Date.now()
+  project.format = PROJECT_FORMAT_VERSION
+  if (oldId && oldId !== newId) {
+    project.spaces = JSON.parse(
+      JSON.stringify(project.spaces).replaceAll(`mtasset://${oldId}/`, `mtasset://${newId}/`)
+    )
+  }
+  await writeJsonAtomic(projectFile(newId), project)
+  return project
+}
+
+async function removeTemplate(templateId: string): Promise<void> {
+  assertTemplateId(templateId)
+  await fs.rm(templateDir(templateId), { recursive: true, force: true })
 }
 
 function formatFromExt(file: string): string {
@@ -475,6 +562,28 @@ async function saveDataUrl(dataUrl: string, suggestedName: string): Promise<Expo
   return { ok: true, path: picked.filePath }
 }
 
+async function saveImage(dataUrl: string, suggestedName: string, format: string): Promise<ExportResult> {
+  const normalized = format === 'jpg' || format === 'jpeg' ? 'jpeg' : format === 'webp' ? 'webp' : 'png'
+  const extension = normalized === 'jpeg' ? 'jpg' : normalized
+  const filters =
+    normalized === 'jpeg'
+      ? [{ name: 'JPEG image', extensions: ['jpg', 'jpeg'] }]
+      : normalized === 'webp'
+        ? [{ name: 'WebP image', extensions: ['webp'] }]
+        : [{ name: 'PNG image', extensions: ['png'] }]
+  const picked = await dialog.showSaveDialog({
+    title: 'Export board image',
+    defaultPath: suggestedName,
+    filters
+  })
+  if (picked.canceled || !picked.filePath) return { ok: false, canceled: true }
+  const comma = dataUrl.indexOf(',')
+  if (comma < 0) return { ok: false, error: 'Invalid image data' }
+  const buffer = Buffer.from(dataUrl.slice(comma + 1), 'base64')
+  await fs.writeFile(picked.filePath, buffer)
+  return { ok: true, path: picked.filePath }
+}
+
 async function savePdf(bytes: ArrayBuffer, suggestedName: string): Promise<ExportResult> {
   const picked = await dialog.showSaveDialog({
     title: 'Export board PDF',
@@ -523,6 +632,11 @@ function createWindow(): void {
     minHeight: 660,
     show: false,
     frame: false,
+    thickFrame: true,
+    hasShadow: true,
+    resizable: true,
+    maximizable: true,
+    minimizable: true,
     backgroundColor: '#101114',
     title: 'Mindtrace',
     autoHideMenuBar: true,
@@ -701,6 +815,15 @@ function registerIpc(): void {
     shell.showItemInFolder(projectFile(id))
   })
 
+  ipcMain.handle('templates:list', async () => listTemplates())
+  ipcMain.handle('templates:save', async (_e, projectId: string, name: string, description: string) =>
+    saveTemplateFromProject(projectId, name, description)
+  )
+  ipcMain.handle('templates:instantiate', async (_e, templateId: string, name: string) =>
+    enqueue(`template:${templateId}`, () => instantiateTemplate(templateId, name))
+  )
+  ipcMain.handle('templates:remove', async (_e, templateId: string) => removeTemplate(templateId))
+
   ipcMain.handle('assets:pick', async (_e, projectId: string): Promise<ImportedAsset[]> => {
     const picked = await dialog.showOpenDialog({
       title: 'Add material to board',
@@ -833,6 +956,9 @@ function registerIpc(): void {
 
   ipcMain.handle('export:png', async (_e, dataUrl: string, name: string) => saveDataUrl(dataUrl, name))
   ipcMain.handle('export:pdf', async (_e, bytes: ArrayBuffer, name: string) => savePdf(bytes, name))
+  ipcMain.handle('export:image', async (_e, dataUrl: string, name: string, format: string) => {
+    return saveImage(dataUrl, name, format)
+  })
 
   ipcMain.handle('shell:openPath', async (_e, path: string) => {
     if (!existsSync(path)) throw new Error('File not found')
@@ -848,13 +974,14 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('window:minimize', () => mainWindow?.minimize())
-  ipcMain.handle('window:toggle-maximize', () => {
-    if (!mainWindow) return
-    if (mainWindow.isMaximized()) mainWindow.unmaximize()
-    else mainWindow.maximize()
-  })
   ipcMain.handle('window:close', () => mainWindow?.close())
   ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false)
+  ipcMain.handle('window:toggle-maximize', () => {
+    if (!mainWindow) return false
+    if (mainWindow.isMaximized()) mainWindow.unmaximize()
+    else mainWindow.maximize()
+    return mainWindow.isMaximized()
+  })
 
   ipcMain.on('session:start', (_e, projectId: string) => {
     if (projectId) markSession(projectId)

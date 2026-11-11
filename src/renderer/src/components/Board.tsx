@@ -16,6 +16,7 @@ import { arrowHeadPathD, strokeSvgPathD } from '@/core/strokes'
 import { uid } from '@/core/id'
 import { pickAssets, importDroppedFiles } from '@/services/storage'
 import { onBoardEvent, BOARD_EVENTS, type CreateEventDetail } from '@/services/events'
+import { useT } from '@/i18n'
 import GridCanvas from './GridCanvas'
 import BoardDefs from './BoardDefs'
 import StrokesLayer from './StrokesLayer'
@@ -25,9 +26,9 @@ import CardView from './CardView'
 import LodLabels from './LodLabels'
 import Minimap from './Minimap'
 import ZoomBar from './ZoomBar'
+import ToolOptionsBar from './ToolOptionsBar'
 
 const EMPTY_PINS = new Map<string, string[]>()
-const ERASER_SCREEN_RADIUS = 14
 
 type Gesture =
   | { type: 'pan'; startScreen: Point; startCamera: Camera }
@@ -77,26 +78,32 @@ interface ConnectState {
   screen: Point
 }
 
-function buildStroke(
-  tool: Stroke['tool'],
-  points: number[],
-  screen: { color: string; width: number; opacity: number }
-): Stroke {
+interface StrokeStyle {
+  color: string
+  width: number
+  opacity: number
+  lineStyle: 'solid' | 'dashed' | 'dotted'
+  smoothing: number
+  fill?: string
+  fillOpacity?: number
+  cornerRadius?: number
+}
+
+function buildStroke(tool: Stroke['tool'], points: number[], style: StrokeStyle): Stroke {
   const isShape = tool === 'line' || tool === 'arrow' || tool === 'rect' || tool === 'ellipse'
-  const width =
-    tool === 'pencil'
-      ? Math.max(1, screen.width * 0.62)
-      : tool === 'marker'
-        ? screen.width * 1.55
-        : screen.width
   return {
     id: uid('str'),
     tool,
-    color: screen.color,
-    width: isShape ? Math.max(1.5, screen.width * 0.9) : width,
-    opacity: tool === 'marker' ? Math.min(0.9, screen.opacity) : screen.opacity,
+    color: style.color,
+    width: isShape ? Math.max(1, style.width) : style.width,
+    opacity: style.opacity,
     points,
     seed: Math.random() * 1000,
+    lineStyle: style.lineStyle,
+    smoothing: style.smoothing,
+    fill: isShape ? style.fill : undefined,
+    fillOpacity: isShape ? style.fillOpacity : undefined,
+    cornerRadius: isShape ? style.cornerRadius : undefined,
     createdAt: Date.now()
   }
 }
@@ -118,6 +125,7 @@ export default function Board(): React.JSX.Element | null {
   const settings = useSettings((state) => state.settings)
   const openContextMenu = useUi((state) => state.openContextMenu)
   const toast = useUi((state) => state.toast)
+  const t = useT()
 
   const boardRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState({ w: 1200, h: 800 })
@@ -127,7 +135,11 @@ export default function Board(): React.JSX.Element | null {
   const [connectState, setConnectState] = useState<ConnectState | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [drawPreview, setDrawPreview] = useState<Stroke | null>(null)
-  const [eraserScreen, setEraserScreen] = useState<Point | null>(null)
+  const [eraserScreen, setEraserScreen] = useState<{
+    point: Point
+    size: number
+    shape: 'circle' | 'square'
+  } | null>(null)
   const [dropActive, setDropActive] = useState(false)
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [panning, setPanning] = useState(false)
@@ -140,6 +152,35 @@ export default function Board(): React.JSX.Element | null {
   const zoom = camera.zoom
   const lodEnabled = mode === 'overview' || zoom < settings.board.lodThreshold
   const lod = Boolean(space) && lodEnabled
+
+  const strokeStyleFor = (strokeTool: Stroke['tool']): StrokeStyle => {
+    if (strokeTool === 'line' || strokeTool === 'arrow' || strokeTool === 'rect' || strokeTool === 'ellipse') {
+      const shape = settings.tools.shape
+      return {
+        color: shape.stroke,
+        width: shape.strokeWidth,
+        opacity: shape.opacity,
+        lineStyle: shape.lineStyle,
+        smoothing: 0,
+        fill: strokeTool === 'line' || strokeTool === 'arrow' ? undefined : shape.fill,
+        fillOpacity: shape.fillOpacity,
+        cornerRadius: shape.radius
+      }
+    }
+    const brush =
+      strokeTool === 'pencil'
+        ? settings.tools.pencil
+        : strokeTool === 'marker'
+          ? settings.tools.marker
+          : settings.tools.chalk
+    return {
+      color: brush.color,
+      width: brush.width,
+      opacity: brush.opacity,
+      lineStyle: brush.lineStyle,
+      smoothing: brush.smoothing
+    }
+  }
   const visibleRect = useMemo(
     () =>
       visibleWorldRect(
@@ -309,11 +350,15 @@ export default function Board(): React.JSX.Element | null {
         viewportRef.current
       )
       useBoard.getState().createCardsFromAssets(assets, at)
-      toast(`${assets.length} material${assets.length === 1 ? '' : 's'} added`, 'success', 1700)
+      toast(
+        t(assets.length === 1 ? 'Added {count} material' : 'Added {count} materials', { count: assets.length }),
+        'success',
+        1700
+      )
     } catch (error) {
-      toast(`Could not add material: ${(error as Error).message}`, 'error', 4200)
+      toast(t('Could not add material: {message}', { message: (error as Error).message }), 'error', 4200)
     }
-  }, [toast])
+  }, [toast, t])
 
   /* ----------------------------- board events --------------------------- */
 
@@ -342,11 +387,16 @@ export default function Board(): React.JSX.Element | null {
       onBoardEvent(BOARD_EVENTS.paste, () => {
         const at = pointerInside ? lastWorldRef.current : centerWorld()
         const count = useBoard.getState().pasteClipboard(at)
-        if (count) toast(`Pasted ${count} object${count === 1 ? '' : 's'}`, 'success', 1400)
+        if (count)
+          toast(
+            t(count === 1 ? 'Pasted {count} object' : 'Pasted {count} objects', { count }),
+            'success',
+            1400
+          )
       })
     ]
     return () => disposers.forEach((dispose) => dispose())
-  }, [centerContent, centerWorld, fitToContent, openAttach, pointerInside, toast])
+  }, [centerContent, centerWorld, fitToContent, openAttach, pointerInside, toast, t])
 
   /* ------------------------------- render data -------------------------- */
 
@@ -501,8 +551,9 @@ export default function Board(): React.JSX.Element | null {
     if (!fromCard) return null
     const from = pinPoint(fromCard, connectState.fromPinId)
     return threadGeometry(from, pinNormal(fromCard, connectState.fromPinId), connectState.point, { x: 0, y: 1 }, {
-      curve: 0.2,
-      reduceOverlap: false
+      curve: settings.tools.thread.curve,
+      reduceOverlap: false,
+      connectionType: settings.tools.thread.connectionType
     })
   }, [connectState, space])
 
@@ -555,11 +606,13 @@ export default function Board(): React.JSX.Element | null {
     if (!space) return
     useUi.getState().setBoardInteracting(true)
     if (tool === 'eraser') {
-      const radius = ERASER_SCREEN_RADIUS / zoom
+      const eraser = settings.tools.eraser
+      const hardness = Math.max(0, Math.min(1, eraser.hardness))
+      const radius = (eraser.size / 2 / zoom) * (0.45 + 0.55 * hardness)
       useBoard.getState().beginHistory('Erase')
       gestureRef.current = { type: 'erase', lastWorld: point, radius }
-      useBoard.getState().eraseStrokesAt(point, radius)
-      setEraserScreen(screenFromEvent(event))
+      useBoard.getState().eraseStrokesAt(point, radius, eraser.shape)
+      setEraserScreen({ point: screenFromEvent(event), size: eraser.size, shape: eraser.shape })
       boardRef.current?.setPointerCapture(event.pointerId)
       return
     }
@@ -574,11 +627,7 @@ export default function Board(): React.JSX.Element | null {
       points: [point.x, point.y],
       pointerId: event.pointerId
     }
-    const preview = buildStroke(strokeTool, [point.x, point.y], {
-      color: settings.objects.drawColor,
-      width: settings.objects.drawWidth,
-      opacity: settings.objects.drawOpacity
-    })
+    const preview = buildStroke(strokeTool, [point.x, point.y], strokeStyleFor(strokeTool))
     setDrawPreview(preview)
     useBoard.getState().setEditingCard(null)
     boardRef.current?.setPointerCapture(event.pointerId)
@@ -586,7 +635,7 @@ export default function Board(): React.JSX.Element | null {
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
     const targetEl = event.target as HTMLElement
-    if (targetEl.closest('.zoom-bar, .minimap, .board-hints, .empty-board, .filter-empty, .drop-overlay')) return
+    if (targetEl.closest('.zoom-bar, .minimap, .board-hints, .empty-board, .filter-empty, .drop-overlay, .tool-options')) return
     if (!space) return
     const point = worldFromEvent(event)
     lastWorldRef.current = point
@@ -606,6 +655,15 @@ export default function Board(): React.JSX.Element | null {
     }
     if (event.button !== 0) return
 
+    if (tool === 'note' || tool === 'text') {
+      event.preventDefault()
+      const card = useBoard.getState().createCard(tool, point, {
+        color: tool === 'note' ? settings.tools.note.color : undefined
+      })
+      if (card) useBoard.getState().setEditingCard(card.id)
+      return
+    }
+
     if (event.button === 0 && (tool === 'chalk' || tool === 'marker' || tool === 'pencil' || tool === 'eraser' || tool === 'line' || tool === 'arrow' || tool === 'rect' || tool === 'ellipse')) {
       event.preventDefault()
       startDrawing(event, point)
@@ -619,7 +677,7 @@ export default function Board(): React.JSX.Element | null {
     const strokeEl = targetEl.closest('[data-stroke-id]') as HTMLElement | null
     const groupEl = targetEl.closest('[data-group-id]') as HTMLElement | null
 
-    if (pinEl && cardEl && tool === 'select') {
+    if (pinEl && cardEl && (tool === 'select' || tool === 'thread')) {
       event.preventDefault()
       event.stopPropagation()
       const fromCardId = cardEl.dataset.cardId as string
@@ -739,7 +797,7 @@ export default function Board(): React.JSX.Element | null {
         const pin = useBoard.getState().addPin(card.id, nx, ny)
         if (pin) {
           useBoard.getState().selectCard(card.id)
-          toast('Pin added. Drag from it to tie a thread.', 'success', 2400)
+          toast(t('Pin added. Drag from it to tie a thread.'), 'success', 2400)
         }
         return
       }
@@ -800,7 +858,10 @@ export default function Board(): React.JSX.Element | null {
     const point = worldFromEvent(event)
     lastWorldRef.current = point
     setPointerInside(true)
-    if (tool === 'eraser') setEraserScreen(screenFromEvent(event))
+    if (tool === 'eraser') {
+      const eraser = settings.tools.eraser
+      setEraserScreen({ point: screenFromEvent(event), size: eraser.size, shape: eraser.shape })
+    }
     const gesture = gestureRef.current
     if (!gesture) return
     const screen = screenFromEvent(event)
@@ -928,11 +989,7 @@ export default function Board(): React.JSX.Element | null {
           const current = gestureRef.current
           if (current?.type === 'draw') {
             setDrawPreview(
-              buildStroke(current.tool, [...current.points], {
-                color: settings.objects.drawColor,
-                width: settings.objects.drawWidth,
-                opacity: settings.objects.drawOpacity
-              })
+              buildStroke(current.tool, [...current.points], strokeStyleFor(current.tool))
             )
           }
         })
@@ -941,9 +998,11 @@ export default function Board(): React.JSX.Element | null {
     }
 
     if (gesture.type === 'erase') {
-      const radius = ERASER_SCREEN_RADIUS / zoom
+      const eraser = settings.tools.eraser
+      const hardness = Math.max(0, Math.min(1, eraser.hardness))
+      const radius = (eraser.size / 2 / zoom) * (0.45 + 0.55 * hardness)
       if (Math.hypot(point.x - gesture.lastWorld.x, point.y - gesture.lastWorld.y) > 2 / zoom) {
-        useBoard.getState().eraseStrokesAt(point, radius)
+        useBoard.getState().eraseStrokesAt(point, radius, eraser.shape)
         gesture.lastWorld = point
       }
     }
@@ -1071,11 +1130,7 @@ export default function Board(): React.JSX.Element | null {
       if (isShape) {
         if (pinchDistance(points) > 4) {
           useBoard.getState().addStroke(
-            buildStroke(gesture.tool, points, {
-              color: settings.objects.drawColor,
-              width: settings.objects.drawWidth,
-              opacity: settings.objects.drawOpacity
-            }),
+            buildStroke(gesture.tool, points, strokeStyleFor(gesture.tool)),
             true
           )
         }
@@ -1084,11 +1139,7 @@ export default function Board(): React.JSX.Element | null {
           points.push(points[0] + 0.6, points[1] + 0.6)
         }
         useBoard.getState().addStroke(
-          buildStroke(gesture.tool, points, {
-            color: settings.objects.drawColor,
-            width: settings.objects.drawWidth,
-            opacity: settings.objects.drawOpacity
-          }),
+          buildStroke(gesture.tool, points, strokeStyleFor(gesture.tool)),
           true
         )
       }
@@ -1161,7 +1212,7 @@ export default function Board(): React.JSX.Element | null {
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>): void => {
     const targetEl = event.target as HTMLElement
-    if (targetEl.closest('.zoom-bar, .minimap, .empty-board, .filter-empty, [data-group-id], [data-interactive]')) return
+    if (targetEl.closest('.zoom-bar, .minimap, .empty-board, .filter-empty, .tool-options, [data-group-id], [data-interactive]')) return
     if (!space) return
     const cardEl = targetEl.closest('[data-card-id]') as HTMLElement | null
     if (cardEl) {
@@ -1209,14 +1260,22 @@ export default function Board(): React.JSX.Element | null {
     if (!files.length) return
     const world = worldFromEvent(event)
     try {
-      toast(`Importing ${files.length} file${files.length === 1 ? '' : 's'}…`, 'info', 1600)
+      toast(
+        t(files.length === 1 ? 'Importing {count} file…' : 'Importing {count} files…', { count: files.length }),
+        'info',
+        1600
+      )
       const assets = await importDroppedFiles(project.id, files)
       if (assets.length) {
         useBoard.getState().createCardsFromAssets(assets, world)
-        toast(`Added ${assets.length} material${assets.length === 1 ? '' : 's'}`, 'success', 1700)
+        toast(
+          t(assets.length === 1 ? 'Added {count} material' : 'Added {count} materials', { count: assets.length }),
+          'success',
+          1700
+        )
       }
     } catch (error) {
-      toast(`Import failed: ${(error as Error).message}`, 'error', 4500)
+      toast(t('Import failed: {message}', { message: (error as Error).message }), 'error', 4500)
     }
   }
 
@@ -1275,14 +1334,21 @@ export default function Board(): React.JSX.Element | null {
         chalkTexture={settings.objects.chalkTexture}
         effects={settings.performance.effects}
       />
+      {settings.ui.showToolOptions && <ToolOptionsBar />}
 
       <div
         className="board-world"
         style={{
-          transform: `translate3d(${viewport.w / 2 - camera.x * zoom}px, ${viewport.h / 2 - camera.y * zoom}px, 0) scale(${zoom})`,
-          ['--inv-zoom' as string]: 1 / zoom
+          transform: `translate3d(${viewport.w / 2 - camera.x * zoom}px, ${viewport.h / 2 - camera.y * zoom}px, 0)`
         }}
       >
+        <div
+          className="board-zoom"
+          style={{
+            zoom,
+            ['--inv-zoom' as string]: 1 / zoom
+          }}
+        >
         <GroupLayer
           space={space}
           visibleCardIds={visibleCardIds}
@@ -1307,13 +1373,24 @@ export default function Board(): React.JSX.Element | null {
             <path
               d={strokeSvgPathD(
                 drawPreview,
-                settings.performance.smoothDrawing ? settings.objects.drawSmoothing : 0
+                settings.performance.smoothDrawing
+                  ? drawPreview.smoothing ?? settings.tools.pencil.smoothing
+                  : 0,
+                drawPreview.cornerRadius ?? 0
               )}
-              fill="none"
+              fill={drawPreview.fill ?? 'none'}
+              fillOpacity={drawPreview.fillOpacity ?? 1}
               stroke={drawPreview.color}
               strokeWidth={drawPreview.width}
               strokeLinecap="round"
               strokeLinejoin="round"
+              strokeDasharray={
+                drawPreview.lineStyle === 'dashed'
+                  ? `${Math.max(6, drawPreview.width * 3)} ${Math.max(4, drawPreview.width * 2.4)}`
+                  : drawPreview.lineStyle === 'dotted'
+                    ? `1 ${Math.max(5, drawPreview.width * 3)}`
+                    : undefined
+              }
               opacity={drawPreview.opacity}
               style={{
                 filter:
@@ -1338,7 +1415,7 @@ export default function Board(): React.JSX.Element | null {
               dimmed={Boolean(focusIds && !focusIds.has(card.id))}
               showAnchors={Boolean(connectState)}
               connectedPins={pinColors.get(card.id) ?? EMPTY_PINS}
-              canConnect={tool === 'select' && !editingCardId}
+              canConnect={(tool === 'select' || tool === 'thread') && !editingCardId}
               showResize={selection.cards.length === 1 && selection.cards[0] === card.id}
             />
           ))}
@@ -1359,8 +1436,8 @@ export default function Board(): React.JSX.Element | null {
               <path
                 className="thread-preview"
                 d={previewGeometry.path}
-                stroke={settings.objects.threadColor}
-                strokeWidth={Math.max(1.5, settings.objects.threadWidth)}
+                stroke={settings.tools.thread.color}
+                strokeWidth={Math.max(1.5, settings.tools.thread.width)}
                 opacity={settings.interaction.showLinkPreview ? 1 : 0}
               />
               <circle
@@ -1395,6 +1472,7 @@ export default function Board(): React.JSX.Element | null {
             </svg>
           )}
         </div>
+        </div>
       </div>
 
       {lod && settings.board.cardLabelsAtLowZoom && (
@@ -1412,10 +1490,11 @@ export default function Board(): React.JSX.Element | null {
         <div
           className="eraser-cursor"
           style={{
-            left: eraserScreen.x,
-            top: eraserScreen.y,
-            width: ERASER_SCREEN_RADIUS * 2,
-            height: ERASER_SCREEN_RADIUS * 2
+            left: eraserScreen.point.x,
+            top: eraserScreen.point.y,
+            width: eraserScreen.size,
+            height: eraserScreen.size,
+            borderRadius: eraserScreen.shape === 'square' ? 2 : '50%'
           }}
         />
       )}
@@ -1428,7 +1507,7 @@ export default function Board(): React.JSX.Element | null {
             top: Math.min(viewport.h - 40, connectState.screen.y + 18)
           }}
         >
-          Release to tie to “{connectTargetCard.title || connectTargetCard.assetName || connectTargetCard.kind}”
+          <span>{t('Release to tie to “{name}”', { name: connectTargetCard.title || connectTargetCard.assetName || connectTargetCard.kind })}</span>
         </div>
       )}
 
@@ -1447,29 +1526,33 @@ export default function Board(): React.JSX.Element | null {
         <div className="board-hints">
           {tool === 'eraser' ? (
             <>
-              <span>Erase chalk, marker and pencil</span>
+              <span>{t('Erase chalk, marker and pencil')}</span>
               <kbd>Esc</kbd>
-              <span>to deselect</span>
+              <span>{t('to deselect')}</span>
             </>
           ) : tool !== 'select' && tool !== 'hand' ? (
             <>
-              <span>Drawing — drag on the board</span>
+              <span>{t('Drawing — drag on the board')}</span>
               <kbd>Esc</kbd>
-              <span>returns to select</span>
+              <span>{t('returns to select')}</span>
             </>
           ) : mode === 'focus' ? (
             <>
-              <span>Focus mode — click a card to trace its chain</span>
+              <span>{t('Focus mode — click a card to trace its chain')}</span>
               <span>·</span>
-              <span>{settings.interaction.focusDepth} level{settings.interaction.focusDepth === 1 ? '' : 's'}</span>
+              <span>
+                {t(settings.interaction.focusDepth === 1 ? '{count} level' : '{count} levels', {
+                  count: settings.interaction.focusDepth
+                })}
+              </span>
             </>
           ) : (
             <>
-              <span>Space + drag to pan</span>
+              <span>{t('Space + drag to pan')}</span>
               <span>·</span>
-              <span>Wheel to zoom</span>
+              <span>{t('Wheel to zoom')}</span>
               <span>·</span>
-              <span>Hover a card to pull a thread</span>
+              <span>{t('Hover a card to pull a thread')}</span>
             </>
           )}
         </div>
@@ -1478,9 +1561,9 @@ export default function Board(): React.JSX.Element | null {
       {Object.keys(space.cards).length === 0 && Object.keys(space.strokes).length === 0 && (
         <div className="empty-board" onPointerDown={(event) => event.stopPropagation()}>
           <div className="empty-board-inner">
-            <div className="empty-eyebrow">BLANK BOARD</div>
-            <h2>A space with no structure imposed.</h2>
-            <p>Place anything, anywhere. Nothing is aligned for you, and nothing moves on its own.</p>
+            <div className="empty-eyebrow">{t('BLANK BOARD')}</div>
+            <h2>{t('A space with no structure imposed.')}</h2>
+            <p>{t('Place anything, anywhere. Nothing is aligned for you, and nothing moves on its own.')}</p>
             <div className="empty-actions">
               <button
                 className="btn btn-primary"
@@ -1489,13 +1572,13 @@ export default function Board(): React.JSX.Element | null {
                   if (card) useBoard.getState().setEditingCard(card.id)
                 }}
               >
-                Add a note
+                {t('Add a note')}
               </button>
               <button className="btn" onClick={() => void openAttach()}>
-                Add a file or image
+                {t('Add a file or image')}
               </button>
             </div>
-            <div className="empty-tip">or double-click anywhere on the board</div>
+            <div className="empty-tip">{t('or double-click anywhere on the board')}</div>
           </div>
         </div>
       )}
@@ -1503,13 +1586,13 @@ export default function Board(): React.JSX.Element | null {
       {filter.active && filterMatchCount === 0 && Object.keys(space.cards).length > 0 && (
         <div className="filter-empty" onPointerDown={(event) => event.stopPropagation()}>
           <div className="filter-empty-inner">
-            <strong>No cards match this filter.</strong>
-            <span>The board is unchanged — matching cards are only hidden from view.</span>
+            <strong>{t('No cards match this filter.')}</strong>
+            <span>{t('The board is unchanged — matching cards are only hidden from view.')}</span>
             <button
               className="btn btn-sm"
               onClick={() => useBoard.getState().clearFilter()}
             >
-              Clear filter
+              {t('Clear filter')}
             </button>
           </div>
         </div>
@@ -1518,7 +1601,8 @@ export default function Board(): React.JSX.Element | null {
       {dropActive && (
         <div className="drop-overlay">
           <div>
-            <span style={{ color: 'var(--accent)' }}>Drop to pin</span> images, video, PDFs, audio or documents
+            <span style={{ color: 'var(--accent)' }}>{t('Drop to pin')}</span>{' '}
+            {t('images, video, PDFs, audio or documents')}
           </div>
         </div>
       )}

@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@/i18n'
 import {
   Database,
   Gauge,
+  Keyboard,
   Layers,
   LayoutGrid,
   MousePointer2,
   Palette,
+  Pencil,
   Plus,
   RotateCcw,
   Settings,
@@ -16,7 +19,16 @@ import {
   X
 } from 'lucide-react'
 import type { SettingsProfile, StorageSnapshot } from '@shared/types'
-import { DECOR_ACTIONS, DEFAULT_KEYBINDINGS, type DecorAction, type TextureId } from '@shared/settings'
+import {
+  DECOR_ACTIONS,
+  DEFAULT_KEYBINDINGS,
+  DEFAULT_TOOL_BINDINGS,
+  DEFAULT_TOOL_ORDER,
+  TOOL_ACTIONS,
+  type DecorAction,
+  type TextureId,
+  type ToolAction
+} from '@shared/settings'
 import { useBoard } from '@/store/board'
 import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
@@ -31,11 +43,21 @@ import {
 import { openProjectById } from '@/services/bootstrap'
 import { formatBytes, formatDate } from '@/core/geometry'
 
-type Tab = 'board' | 'objects' | 'interface' | 'interaction' | 'performance' | 'data' | 'categories' | 'presets'
+type Tab =
+  | 'board'
+  | 'objects'
+  | 'tools'
+  | 'interface'
+  | 'interaction'
+  | 'performance'
+  | 'data'
+  | 'categories'
+  | 'presets'
 
 const TABS: { id: Tab; label: string; icon: typeof Settings }[] = [
   { id: 'board', label: 'Board surface', icon: LayoutGrid },
   { id: 'objects', label: 'Objects', icon: Layers },
+  { id: 'tools', label: 'Tools', icon: Pencil },
   { id: 'interface', label: 'Interface', icon: Palette },
   { id: 'interaction', label: 'Interaction', icon: MousePointer2 },
   { id: 'performance', label: 'Performance', icon: Gauge },
@@ -251,6 +273,7 @@ export default function SettingsDialog(): React.JSX.Element | null {
           <div className="settings-content" data-advanced={advanced ? 'true' : 'false'}>
             {tab === 'board' && <BoardSettings readBackground={readBackground} fileInputRef={fileInputRef} />}
             {tab === 'objects' && <ObjectSettings />}
+            {tab === 'tools' && <ToolsSettings toast={toast} />}
             {tab === 'interface' && <InterfaceSettings />}
             {tab === 'interaction' && (
               <InteractionSettings
@@ -837,6 +860,17 @@ function InterfaceSettings(): React.JSX.Element {
         <div className="settings-card">
           <div className="settings-grid">
             <div className="field-col">
+              <span className="field-label">Language</span>
+              <Select
+                value={ui.language}
+                onChange={(value) => update('ui', { language: value as 'ru' | 'en' })}
+                options={[
+                  { value: 'ru', label: 'Русский' },
+                  { value: 'en', label: 'English' }
+                ]}
+              />
+            </div>
+            <div className="field-col">
               <span className="field-label">Interface theme</span>
               <Select
                 value={ui.theme}
@@ -893,6 +927,32 @@ function InterfaceSettings(): React.JSX.Element {
                   { value: 'left', label: 'Left' }
                 ]}
               />
+            </SettingRow>
+            <SettingRow title="Tool rail side">
+              <Select
+                value={ui.toolRailSide}
+                onChange={(value) => update('ui', { toolRailSide: value as 'left' | 'right' })}
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' }
+                ]}
+              />
+            </SettingRow>
+            <SettingRow title="Show tool options bar">
+              <Toggle value={ui.showToolOptions} onChange={(value) => update('ui', { showToolOptions: value })} label="Tool options bar" />
+            </SettingRow>
+            <SettingRow title="Options bar position">
+              <Select
+                value={ui.optionsBarPosition}
+                onChange={(value) => update('ui', { optionsBarPosition: value as 'top' | 'bottom' })}
+                options={[
+                  { value: 'top', label: 'Top' },
+                  { value: 'bottom', label: 'Bottom' }
+                ]}
+              />
+            </SettingRow>
+            <SettingRow title="Show the home screen on launch">
+              <Toggle value={ui.showHomeOnLaunch} onChange={(value) => update('ui', { showHomeOnLaunch: value })} label="Home screen" />
             </SettingRow>
             <SettingRow title="Board hints">
               <Toggle value={ui.showHints} onChange={(value) => update('ui', { showHints: value })} label="Board hints" />
@@ -1309,6 +1369,150 @@ function DataSettings({
             >
               Import settings
             </button>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
+
+/* ------------------------------- categories ------------------------------ */
+
+function ToolsSettings({ toast }: { toast: (message: string, kind?: 'info' | 'success' | 'error') => void }): React.JSX.Element {
+  const settings = useSettings((state) => state.settings)
+  const update = useSettings((state) => state.update)
+  const [recording, setRecording] = useState<ToolAction | null>(null)
+
+  useEffect(() => {
+    if (!recording) return
+    const handler = (event: KeyboardEvent): void => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.key === 'Escape') {
+        setRecording(null)
+        return
+      }
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return
+      const parts: string[] = []
+      if (event.ctrlKey || event.metaKey) parts.push('Ctrl')
+      if (event.altKey) parts.push('Alt')
+      if (event.shiftKey) parts.push('Shift')
+      let key = event.key
+      if (key === ' ') key = 'Space'
+      else if (key.length === 1) key = key.toUpperCase()
+      parts.push(key)
+      const combo = parts.join('+')
+      const toolConflict = (Object.keys(settings.tools.bindings) as ToolAction[]).find(
+        (action) => action !== recording && settings.tools.bindings[action]?.toLowerCase() === combo.toLowerCase()
+      )
+      const actionConflict = (Object.keys(settings.interaction.keybindings) as DecorAction[]).find(
+        (action) => settings.interaction.keybindings[action]?.toLowerCase() === combo.toLowerCase()
+      )
+      if (toolConflict || actionConflict) {
+        toast(`Shortcut conflict: ${combo}`, 'error')
+        setRecording(null)
+        return
+      }
+      update('tools', {
+        bindings: { ...settings.tools.bindings, [recording]: combo }
+      })
+      setRecording(null)
+    }
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [recording, settings.tools.bindings, settings.interaction.keybindings, toast, update])
+
+  const resetLayout = (): void => {
+    update('ui', {
+      showToolRail: true,
+      toolRailSide: 'left',
+      showInspector: true,
+      inspectorSide: 'right',
+      showToolOptions: true,
+      optionsBarPosition: 'top'
+    })
+    update('tools', {
+      order: [...DEFAULT_TOOL_ORDER],
+      visibility: Object.fromEntries(TOOL_ACTIONS.map((tool) => [tool.id, true])) as Record<ToolAction, boolean>,
+      bindings: { ...DEFAULT_TOOL_BINDINGS }
+    })
+    toast('Layout reset', 'success')
+  }
+
+  return (
+    <>
+      <section className="settings-section">
+        <h3>Tool shortcuts</h3>
+        <p>Each tool can have its own single-key shortcut. Changes apply immediately. Conflicts are highlighted.</p>
+        <div className="settings-card">
+          <div className="keybindings">
+            {TOOL_ACTIONS.map((tool) => {
+              const conflict =
+                (Object.keys(settings.tools.bindings) as ToolAction[]).some(
+                  (other) =>
+                    other !== tool.id &&
+                    settings.tools.bindings[other] &&
+                    settings.tools.bindings[other].toLowerCase() === settings.tools.bindings[tool.id]?.toLowerCase()
+                ) ||
+                Object.values(settings.interaction.keybindings).some(
+                  (combo) => combo && combo.toLowerCase() === settings.tools.bindings[tool.id]?.toLowerCase()
+                )
+              return (
+                <div key={tool.id} className="keybinding-row">
+                  <span>{tool.label}</span>
+                  <button
+                    className={`kbd ${recording === tool.id ? 'is-recording' : ''} ${conflict ? 'is-conflict' : ''}`}
+                    onClick={() => setRecording(recording === tool.id ? null : tool.id)}
+                    title={conflict ? 'Shortcut conflict' : 'Click to remap'}
+                  >
+                    {recording === tool.id ? 'Press keys…' : settings.tools.bindings[tool.id] || 'Unset'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          <div className="divider-full" />
+          <div className="settings-actions">
+            <button className="btn btn-sm" onClick={resetLayout}>
+              <RotateCcw size={11} /> Reset layout
+            </button>
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                update('tools', { bindings: { ...DEFAULT_TOOL_BINDINGS } })
+                toast('Default tool shortcuts restored', 'success')
+              }}
+            >
+              <Keyboard size={11} /> Reset shortcuts
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h3>Tools visible in the rail</h3>
+        <p>Hide tools you do not use. They remain available by shortcut unless you remove the shortcut.</p>
+        <div className="settings-card">
+          <div className="tool-visibility-grid">
+            {TOOL_ACTIONS.map((tool) => (
+              <div key={tool.id} className="setting-row">
+                <div className="setting-label">
+                  <strong>{tool.label}</strong>
+                </div>
+                <button
+                  className={`toggle ${settings.tools.visibility[tool.id] ? 'is-on' : ''}`}
+                  onClick={() =>
+                    update('tools', {
+                      visibility: {
+                        ...settings.tools.visibility,
+                        [tool.id]: !settings.tools.visibility[tool.id]
+                      }
+                    })
+                  }
+                  aria-label={tool.label}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>

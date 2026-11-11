@@ -16,6 +16,7 @@ import { useUi } from '@/store/ui'
 import { contentBounds, plainTextFromHtml } from '@/core/geometry'
 import { groupBounds } from '@/core/geometry'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
+import { useT } from '@/i18n'
 
 type Item =
   | { kind: 'card'; key: string; space: Space; card: Card; title: string; sub: string }
@@ -27,6 +28,7 @@ export default function SearchPalette(): React.JSX.Element | null {
   const modal = useUi((state) => state.modal)
   const close = useUi((state) => state.closeModal)
   const project = useBoard((state) => state.project)
+  const t = useT()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -159,7 +161,7 @@ export default function SearchPalette(): React.JSX.Element | null {
             ref={inputRef}
             className="search-input"
             value={query}
-            placeholder="Search cards, notes, files, categories, threads…"
+            placeholder={t('Search cards, notes, files, categories, threads…')}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onKeyDown}
           />
@@ -172,24 +174,24 @@ export default function SearchPalette(): React.JSX.Element | null {
         <div className="search-results" ref={listRef}>
           {items.length === 0 && query.trim() && (
             <div className="search-empty">
-              <p>Nothing matches “{query.trim()}” yet.</p>
+              <p>{t('Nothing matches “{query}” yet.', { query: query.trim() })}</p>
               <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                 <button className="btn btn-sm" onClick={() => createCardFromQuery('note')}>
-                  <StickyNote size={12} /> Create a note with this title
+                  <StickyNote size={12} /> {t('Create a note with this title')}
                 </button>
                 <button className="btn btn-sm" onClick={() => createCardFromQuery('text')}>
-                  <Type size={12} /> Create a card
+                  <Type size={12} /> {t('Create a card')}
                 </button>
               </div>
             </div>
           )}
           {items.length === 0 && !query.trim() && (
-            <div className="search-empty">Start typing to search every space in this project.</div>
+            <div className="search-empty">{t('Start typing to search every space in this project.')}</div>
           )}
 
           {groups.card.length > 0 && (
             <>
-              <div className="search-group-label">Cards &amp; materials</div>
+              <div className="search-group-label">{t('Cards & materials')}</div>
               {groups.card.map((item) => {
                 index++
                 return (
@@ -211,7 +213,7 @@ export default function SearchPalette(): React.JSX.Element | null {
 
           {groups.thread.length > 0 && (
             <>
-              <div className="search-group-label">Threads</div>
+              <div className="search-group-label">{t('Threads')}</div>
               {groups.thread.map((item) => {
                 index++
                 return (
@@ -233,7 +235,7 @@ export default function SearchPalette(): React.JSX.Element | null {
 
           {groups.group.length > 0 && (
             <>
-              <div className="search-group-label">Groups</div>
+              <div className="search-group-label">{t('Groups')}</div>
               {groups.group.map((item) => {
                 index++
                 return (
@@ -255,7 +257,7 @@ export default function SearchPalette(): React.JSX.Element | null {
 
           {groups.space.length > 0 && (
             <>
-              <div className="search-group-label">Spaces</div>
+              <div className="search-group-label">{t('Spaces')}</div>
               {groups.space.map((item) => {
                 index++
                 return (
@@ -284,7 +286,7 @@ export default function SearchPalette(): React.JSX.Element | null {
                   emitBoardEvent(BOARD_EVENTS.create, { kind: 'note' })
                 }}
               >
-                <StickyNote size={11} /> New note
+                <StickyNote size={11} /> {t('New note')}
               </button>
               <button
                 className="btn btn-sm"
@@ -293,17 +295,17 @@ export default function SearchPalette(): React.JSX.Element | null {
                   emitBoardEvent(BOARD_EVENTS.attach)
                 }}
               >
-                <Plus size={11} /> Add material
+                <Plus size={11} /> {t('Add material')}
               </button>
             </div>
           )}
         </div>
 
         <div className="search-footer">
-          <span className="kbd">↑↓</span> navigate
-          <span className="kbd">Enter</span> jump to board
+          <span className="kbd">↑↓</span> {t('navigate')}
+          <span className="kbd">Enter</span> {t('jump to board')}
           <span className="spacer" />
-          <span>Cards, files, categories and threads are searched together</span>
+          <span>{t('Cards, files, categories and threads are searched together')}</span>
         </div>
       </div>
     </div>

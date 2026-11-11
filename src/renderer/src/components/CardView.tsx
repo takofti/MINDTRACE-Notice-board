@@ -34,6 +34,7 @@ import {
   readAssetText
 } from '@/services/storage'
 import { pinNorm } from '@/core/geometry'
+import { useT } from '@/i18n'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 type DocState =
@@ -72,6 +73,7 @@ function CardView({
   const setEditingCard = useBoard((state) => state.setEditingCard)
   const openContextMenu = useUi((state) => state.openContextMenu)
   const openLightbox = useUi((state) => state.openLightbox)
+  const t = useT()
   const [hovered, setHovered] = useState(false)
   const [titleEditing, setTitleEditing] = useState(false)
   const [titleDraft, setTitleDraft] = useState(card.title)
@@ -103,7 +105,9 @@ function CardView({
     '--card-font-size': `${card.style?.fontSize ?? (isNote ? settings.objects.noteFontSize : settings.objects.cardFontSize)}px`,
     '--card-font-family':
       card.style?.fontFamily ?? (isNote ? settings.objects.textFontFamily : settings.objects.cardFontFamily),
-    '--card-line-height': settings.objects.textLineHeight,
+    '--card-line-height': card.style?.lineHeight ?? settings.objects.textLineHeight,
+    '--card-weight': card.style?.bold ? 700 : 400,
+    '--card-style': card.style?.italic ? 'italic' : 'normal',
     '--card-opacity': card.style?.opacity ?? settings.objects.cardOpacity,
     '--img-fit': card.style?.imageFit ?? settings.objects.imageFit,
     '--card-align': card.style?.align ?? 'left',
@@ -178,27 +182,25 @@ function CardView({
                 }}
               />
             ) : (
-              <span
-                className="card-title"
-                onDoubleClick={(event) => {
+              <span className="card-title" onDoubleClick={(event) => {
                   event.stopPropagation()
                   setTitleEditing(true)
                   setTitleDraft(card.title)
                 }}
-                title={card.title || 'Untitled'}
+                title={card.title || t('Untitled')}
               >
-                {card.title || kindLabel(card.kind)}
+                {card.title || t(kindLabel(card.kind))}
               </span>
             )}
             {card.locked && <Lock size={10} className="kind-icon" />}
-            <button className="card-menu" onClick={openMenu} data-interactive title="Card actions">
+            <button className="card-menu" onClick={openMenu} data-interactive title={t('Card actions')}>
               <MoreHorizontal size={13} />
             </button>
           </div>
         )}
 
         {isNote && (
-          <button className="card-menu" style={{ position: 'absolute', right: 5, top: 5, opacity: hovered || selected ? 1 : 0 }} onClick={openMenu} data-interactive title="Note actions">
+          <button className="card-menu" style={{ position: 'absolute', right: 5, top: 5, opacity: hovered || selected ? 1 : 0 }} onClick={openMenu} data-interactive title={t('Note actions')}>
             <MoreHorizontal size={13} />
           </button>
         )}
@@ -227,7 +229,7 @@ function CardView({
             ) : (
               <div className="file-body">
                 <FileText size={22} className="file-icon-large" />
-                <span className="hint-text">{asset.loading ? 'Loading image…' : 'Image unavailable'}</span>
+                <span className="hint-text">{asset.loading ? t('Loading image…') : t('Image unavailable')}</span>
               </div>
             )}
           </div>
@@ -235,7 +237,7 @@ function CardView({
 
         {card.kind === 'image' && (
           <div className="image-caption">
-            <span>{card.caption || card.assetName || card.title || 'Untitled image'}</span>
+            <span>{card.caption || card.assetName || card.title || t('Untitled image')}</span>
           </div>
         )}
 
@@ -246,7 +248,7 @@ function CardView({
             ) : (
               <div className="file-body">
                 <Video size={22} className="file-icon-large" />
-                <span className="hint-text">{asset.loading ? 'Loading video…' : 'Video unavailable'}</span>
+                <span className="hint-text">{asset.loading ? t('Loading video…') : t('Video unavailable')}</span>
               </div>
             )}
           </div>
@@ -258,7 +260,7 @@ function CardView({
               <Music size={16} style={{ color: 'var(--accent)' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="file-name">{card.title || card.assetName}</div>
-                <div className="file-meta">AUDIO</div>
+                <div className="file-meta">{t('Audio').toUpperCase()}</div>
               </div>
             </div>
             {asset.url && <audio src={asset.url} controls preload="metadata" />}
@@ -272,7 +274,7 @@ function CardView({
             ) : (
               <div className="file-body">
                 <FileText size={22} className="file-icon-large" />
-                <span className="hint-text">{asset.loading ? 'Loading PDF…' : 'PDF unavailable'}</span>
+                <span className="hint-text">{asset.loading ? t('Loading PDF…') : t('PDF unavailable')}</span>
               </div>
             )}
           </div>
@@ -286,9 +288,9 @@ function CardView({
           <div className="file-body" data-interactive>
             <FileIcon size={24} className="file-icon-large" />
             <div className="file-name">{card.assetName || card.title}</div>
-            <div className="file-meta">{card.mime || 'FILE'}</div>
+            <div className="file-meta">{card.mime || t('File').toUpperCase()}</div>
             <button className="btn btn-sm" onClick={handleOpenAsset} style={{ marginTop: 3 }}>
-              <ExternalLink size={11} /> Open file
+              <ExternalLink size={11} /> {t('Open file')}
             </button>
           </div>
         )}
@@ -302,7 +304,7 @@ function CardView({
               className="btn btn-sm"
               onClick={() => card.assetUrl && void openExternal(card.assetUrl).catch((e) => useUi.getState().toast((e as Error).message, 'error'))}
             >
-              <ExternalLink size={11} /> Open link
+              <ExternalLink size={11} /> {t('Open link')}
             </button>
           </div>
         )}
@@ -333,8 +335,8 @@ function CardView({
                 data-shape={settings.objects.pinShape}
                 title={
                   colors.length
-                    ? `${colors.length} thread${colors.length === 1 ? '' : 's'} — drag to tie another`
-                    : 'Drag this pin to another card to tie a thread'
+                    ? `${t(colors.length === 1 ? '{count} thread' : '{count} threads', { count: colors.length })} ${t('— drag to tie another')}`
+                    : t('Drag this pin to another card to tie a thread')
                 }
               >
                 <span className="pin-ring" />
@@ -418,6 +420,7 @@ function RichTextBody({
   const updateCard = useBoard((state) => state.updateCard)
   const beginHistory = useBoard((state) => state.beginHistory)
   const commitHistory = useBoard((state) => state.commitHistory)
+  const t = useT()
   const wasEditing = useRef(false)
 
   useEffect(() => {
@@ -471,33 +474,33 @@ function RichTextBody({
           data-interactive
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <button title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('bold')}>
+          <button title={t('Bold')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('bold')}>
             <Bold size={12} />
           </button>
-          <button title="Italic" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('italic')}>
+          <button title={t('Italic')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('italic')}>
             <Italic size={12} />
           </button>
-          <button title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('underline')}>
+          <button title={t('Underline')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('underline')}>
             <Underline size={12} />
           </button>
-          <button title="Strike" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('strikeThrough')}>
+          <button title={t('Strike')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('strikeThrough')}>
             <Strikethrough size={12} />
           </button>
           <span className="format-sep" />
-          <button title="Bullet list" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertUnorderedList')}>
+          <button title={t('Bullet list')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertUnorderedList')}>
             <List size={12} />
           </button>
-          <button title="Numbered list" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertOrderedList')}>
+          <button title={t('Numbered list')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertOrderedList')}>
             <ListOrdered size={12} />
           </button>
           <span className="format-sep" />
-          <button title="Align left" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyLeft')}>
+          <button title={t('Align left')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyLeft')}>
             <AlignLeft size={12} />
           </button>
-          <button title="Align center" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyCenter')}>
+          <button title={t('Align center')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyCenter')}>
             <AlignCenter size={12} />
           </button>
-          <button title="Align right" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyRight')}>
+          <button title={t('Align right')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('justifyRight')}>
             <AlignRight size={12} />
           </button>
         </div>
@@ -533,6 +536,7 @@ function RichTextBody({
 /* ------------------------------- documents ------------------------------ */
 
 function PdfPreview({ card }: { card: Card }): React.JSX.Element {
+  const t = useT()
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [pdf, setPdf] = useState<{ doc: import('pdfjs-dist').PDFDocumentProxy } | null>(null)
@@ -543,7 +547,7 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
   useEffect(() => {
     let alive = true
     setStatus('loading')
-    setMessage('Reading PDF…')
+    setMessage(t('Reading PDF…'))
     ;(async () => {
       try {
         const bytes = await readAssetBytes(card.assetUrl as string)
@@ -580,7 +584,7 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
     ;(async () => {
       try {
         setStatus('loading')
-        setMessage(`Rendering page ${pageNumber}…`)
+        setMessage(t('Rendering page {page}…', { page: pageNumber }))
         const page = await pdf.doc.getPage(pageNumber)
         if (!alive) return
         const base = page.getViewport({ scale: 1 })
@@ -621,15 +625,15 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
         {status === 'loading' && (
           <div className="file-body">
             <FileText size={22} className="file-icon-large" />
-            <span className="hint-text">{message || 'Rendering PDF…'}</span>
+            <span className="hint-text">{message || t('Rendering PDF…')}</span>
           </div>
         )}
         {status === 'error' && (
           <div className="file-body">
             <FileText size={22} className="file-icon-large" />
-            <span className="hint-text">Preview unavailable{message ? `: ${message}` : '.'}</span>
+            <span className="hint-text">{t('Preview unavailable. Open the file instead.')}{message ? `: ${message}` : ''}</span>
             <button className="btn btn-sm" onClick={() => void openAsset(card.assetUrl as string)}>
-              <ExternalLink size={11} /> Open PDF
+              <ExternalLink size={11} /> {t('Open PDF')}
             </button>
           </div>
         )}
@@ -645,7 +649,7 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
             className="icon-btn"
             disabled={pageNumber <= 1}
             onClick={() => setPageNumber((value) => Math.max(1, value - 1))}
-            title="Previous page"
+            title={t('Previous page')}
           >
             <ChevronLeft size={12} />
           </button>
@@ -656,7 +660,7 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
             className="icon-btn"
             disabled={pageNumber >= pdf.doc.numPages}
             onClick={() => setPageNumber((value) => Math.min(pdf.doc.numPages, value + 1))}
-            title="Next page"
+            title={t('Next page')}
           >
             <ChevronRight size={12} />
           </button>
@@ -664,7 +668,7 @@ function PdfPreview({ card }: { card: Card }): React.JSX.Element {
           <button
             className="icon-btn"
             onClick={() => void openAsset(card.assetUrl as string)}
-            title="Open in the default PDF viewer"
+            title={t('Open in the default PDF viewer')}
           >
             <ExternalLink size={11} />
           </button>
@@ -690,6 +694,7 @@ function sanitizeHtml(html: string): string {
 }
 
 function DocBody({ card, loading, url }: { card: Card; loading: boolean; url?: string }): React.JSX.Element {
+  const t = useT()
   const [state, setState] = useState<DocState>({ status: 'idle' })
   const ext = (card.assetName ?? '').split('.').pop()?.toLowerCase() ?? ''
 
@@ -736,16 +741,16 @@ function DocBody({ card, loading, url }: { card: Card; loading: boolean; url?: s
       {(state.status === 'loading' || loading) && (
         <div className="file-body">
           <FileText size={22} className="file-icon-large" />
-          <span className="hint-text">Reading document…</span>
+          <span className="hint-text">{t('Reading document…')}</span>
         </div>
       )}
       {state.status === 'error' && (
         <div className="file-body">
           <FileText size={22} className="file-icon-large" />
-          <span className="hint-text">Preview unavailable. Open the file instead.</span>
+          <span className="hint-text">{t('Preview unavailable. Open the file instead.')}</span>
           {url && (
             <button className="btn btn-sm" onClick={() => void openAsset(card.assetUrl as string)}>
-              <ExternalLink size={11} /> Open
+              <ExternalLink size={11} /> {t('Open')}
             </button>
           )}
         </div>
@@ -753,7 +758,7 @@ function DocBody({ card, loading, url }: { card: Card; loading: boolean; url?: s
       {state.status === 'idle' && !loading && !card.assetUrl && (
         <div className="file-body">
           <FileText size={22} className="file-icon-large" />
-          <span className="hint-text">Document unavailable</span>
+          <span className="hint-text">{t('Document unavailable')}</span>
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { Point } from '@shared/types'
 import type { ToolId } from '@shared/types'
 
-export type ModalId = 'settings' | 'projects' | 'search' | 'help' | 'export' | 'filters' | 'snapshots' | null
+export type ModalId = 'settings' | 'projects' | 'search' | 'help' | 'export' | 'filters' | 'snapshots' | 'create' | null
 
 export type ContextTarget =
   | { type: 'canvas'; world: Point; screen: Point }
@@ -47,6 +47,7 @@ interface UiState {
   activeDrawingTool: Exclude<ToolId, 'select' | 'hand' | 'note' | 'text'>
   renameSpaceId: string | null
   boardInteracting: boolean
+  homeOpen: boolean
   openModal: (modal: ModalId, payload?: string) => void
   closeModal: () => void
   openContextMenu: (target: ContextTarget) => void
@@ -63,6 +64,8 @@ interface UiState {
   setActiveDrawingTool: (tool: UiState['activeDrawingTool']) => void
   setRenameSpaceId: (id: string | null) => void
   setBoardInteracting: (value: boolean) => void
+  openHome: () => void
+  closeHome: () => void
 }
 
 export const useUi = create<UiState>((set, get) => ({
@@ -78,6 +81,7 @@ export const useUi = create<UiState>((set, get) => ({
   activeDrawingTool: 'chalk',
   renameSpaceId: null,
   boardInteracting: false,
+  homeOpen: false,
 
   openModal: (modal: ModalId, payload: string | null = null) => set({ modal, modalPayload: payload, contextMenu: null }),
   closeModal: () => set({ modal: null, modalPayload: null }),
@@ -118,5 +122,7 @@ export const useUi = create<UiState>((set, get) => ({
   setPanelCollapsed: (value) => set({ panelCollapsed: value }),
   setActiveDrawingTool: (tool) => set({ activeDrawingTool: tool }),
   setRenameSpaceId: (id) => set({ renameSpaceId: id }),
-  setBoardInteracting: (value) => set({ boardInteracting: value })
+  setBoardInteracting: (value) => set({ boardInteracting: value }),
+  openHome: () => set({ homeOpen: true }),
+  closeHome: () => set({ homeOpen: false })
 }))

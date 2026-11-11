@@ -104,7 +104,8 @@ export function threadCurveFor(
     lane: lane?.lane,
     laneCount: lane?.count,
     reduceOverlap: settings.board.reduceThreadOverlap,
-    zoom
+    zoom,
+    connectionType: thread.connectionType ?? 'curved'
   })
 }
 

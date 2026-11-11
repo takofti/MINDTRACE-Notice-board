@@ -11,6 +11,77 @@ export type Density = 'compact' | 'comfortable'
 export type Quality = 'high' | 'balanced' | 'low'
 export type ImageQuality = 'high' | 'medium' | 'low'
 export type PinVisibility = 'hover' | 'always' | 'connected'
+export type UILanguage = 'ru' | 'en'
+export type LineStyle = 'solid' | 'dashed' | 'dotted'
+export type EraserShape = 'circle' | 'square'
+export type ShapeKind = 'rect' | 'ellipse' | 'line' | 'arrow'
+export type ThreadVisualStyle = 'minimal' | 'neon' | 'realistic'
+export type ThreadConnectionType = 'curved' | 'straight' | 'elbow'
+export type ExportFormat = 'png' | 'jpg' | 'webp'
+
+export type ToolAction =
+  | 'select'
+  | 'hand'
+  | 'note'
+  | 'text'
+  | 'pencil'
+  | 'chalk'
+  | 'marker'
+  | 'eraser'
+  | 'rect'
+  | 'ellipse'
+  | 'line'
+  | 'arrow'
+  | 'thread'
+
+export const TOOL_ACTIONS: { id: ToolAction; label: string }[] = [
+  { id: 'select', label: 'Move / select' },
+  { id: 'hand', label: 'Pan' },
+  { id: 'note', label: 'Sticky note' },
+  { id: 'text', label: 'Text' },
+  { id: 'pencil', label: 'Pencil' },
+  { id: 'chalk', label: 'Chalk' },
+  { id: 'marker', label: 'Marker' },
+  { id: 'eraser', label: 'Eraser' },
+  { id: 'rect', label: 'Rectangle' },
+  { id: 'ellipse', label: 'Ellipse' },
+  { id: 'line', label: 'Line' },
+  { id: 'arrow', label: 'Arrow' },
+  { id: 'thread', label: 'Thread / connection' }
+]
+
+export const DEFAULT_TOOL_BINDINGS: Record<ToolAction, string> = {
+  select: 'V',
+  hand: 'H',
+  note: 'N',
+  text: 'T',
+  pencil: 'P',
+  chalk: 'C',
+  marker: 'M',
+  eraser: 'E',
+  rect: 'R',
+  ellipse: 'O',
+  line: 'L',
+  arrow: 'A',
+  thread: 'Y'
+}
+
+export const DEFAULT_TOOL_ORDER: ToolAction[] = [
+  'select',
+  'hand',
+  'note',
+  'text',
+  'pencil',
+  'chalk',
+  'marker',
+  'eraser',
+  'rect',
+  'ellipse',
+  'line',
+  'arrow',
+  'thread'
+]
+
 export type DecorAction =
   | 'undo'
   | 'redo'
@@ -67,8 +138,8 @@ export const DEFAULT_KEYBINDINGS: Record<DecorAction, string> = {
   escape: 'Escape',
   selectAll: 'Ctrl+A',
   group: 'Ctrl+G',
-  newNote: 'N',
-  newText: 'T',
+  newNote: 'Ctrl+Shift+N',
+  newText: 'Ctrl+Shift+T',
   fitBoard: 'Ctrl+0',
   resetZoom: 'Ctrl+1',
   toggleMode: 'F',
@@ -135,19 +206,91 @@ export interface ObjectSettings {
   imageFit: 'cover' | 'contain'
 }
 
+export interface ToolSettings {
+  pencil: {
+    color: string
+    width: number
+    opacity: number
+    smoothing: number
+    lineStyle: LineStyle
+  }
+  chalk: {
+    color: string
+    width: number
+    opacity: number
+    smoothing: number
+    lineStyle: LineStyle
+  }
+  marker: {
+    color: string
+    width: number
+    opacity: number
+    smoothing: number
+    lineStyle: LineStyle
+  }
+  eraser: {
+    size: number
+    hardness: number
+    shape: EraserShape
+  }
+  text: {
+    fontFamily: string
+    fontSize: number
+    color: string
+    bold: boolean
+    italic: boolean
+    align: 'left' | 'center' | 'right'
+    lineHeight: number
+  }
+  shape: {
+    type: ShapeKind
+    fill: string
+    fillOpacity: number
+    stroke: string
+    strokeWidth: number
+    opacity: number
+    radius: number
+    lineStyle: LineStyle
+  }
+  note: {
+    color: string
+    width: number
+    height: number
+    fontSize: number
+  }
+  thread: {
+    color: string
+    width: number
+    opacity: number
+    lineStyle: LineStyle
+    visualStyle: ThreadVisualStyle
+    connectionType: ThreadConnectionType
+    curve: number
+  }
+  bindings: Record<ToolAction, string>
+  visibility: Record<ToolAction, boolean>
+  order: ToolAction[]
+  lastShape: ShapeKind
+}
+
 export interface InterfaceSettings {
   theme: ThemeMode
+  language: UILanguage
   accent: string
   density: Density
   uiScale: number
   animations: boolean
   reducedMotion: boolean
   showToolRail: boolean
+  toolRailSide: 'left' | 'right'
   showInspector: boolean
   inspectorSide: 'left' | 'right'
   showMinimap: boolean
   showHints: boolean
+  showToolOptions: boolean
+  optionsBarPosition: 'top' | 'bottom'
   showGridByDefault: boolean
+  showHomeOnLaunch: boolean
   iconScale: number
   panelOpacity: number
 }
@@ -192,6 +335,12 @@ export interface DataSettings {
   snapshotOnImport: boolean
   snapshotOnSpaceDelete: boolean
   exportScale: number
+  exportFormat: ExportFormat
+  exportQuality: number
+  exportWidth: number | null
+  exportHeight: number | null
+  exportLockAspect: boolean
+  exportTransparent: boolean
   exportIncludeBackground: boolean
   exportThreads: boolean
   exportPins: boolean
@@ -203,13 +352,14 @@ export interface AppSettings {
   version: number
   board: BoardSettings
   objects: ObjectSettings
+  tools: ToolSettings
   ui: InterfaceSettings
   interaction: InteractionSettings
   performance: PerformanceSettings
   data: DataSettings
 }
 
-export const SETTINGS_VERSION = 1
+export const SETTINGS_VERSION = 2
 
 export const DEFAULT_SETTINGS: AppSettings = {
   version: SETTINGS_VERSION,
@@ -269,19 +419,93 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   ui: {
     theme: 'dark',
+    language: 'ru',
     accent: '#c8553d',
     density: 'comfortable',
     uiScale: 1,
     animations: true,
     reducedMotion: false,
     showToolRail: true,
+    toolRailSide: 'left',
     showInspector: true,
     inspectorSide: 'right',
     showMinimap: true,
     showHints: true,
+    showToolOptions: true,
+    optionsBarPosition: 'top',
     showGridByDefault: true,
+    showHomeOnLaunch: true,
     iconScale: 1,
     panelOpacity: 0.92
+  },
+  tools: {
+    pencil: {
+      color: '#e9e6dd',
+      width: 3,
+      opacity: 0.9,
+      smoothing: 0.55,
+      lineStyle: 'solid'
+    },
+    chalk: {
+      color: '#efeadd',
+      width: 4,
+      opacity: 0.78,
+      smoothing: 0.5,
+      lineStyle: 'solid'
+    },
+    marker: {
+      color: '#c8553d',
+      width: 8,
+      opacity: 0.55,
+      smoothing: 0.35,
+      lineStyle: 'solid'
+    },
+    eraser: {
+      size: 28,
+      hardness: 0.82,
+      shape: 'circle'
+    },
+    text: {
+      fontFamily: 'Inter, Segoe UI, sans-serif',
+      fontSize: 16,
+      color: '#e9e6de',
+      bold: false,
+      italic: false,
+      align: 'left',
+      lineHeight: 1.5
+    },
+    shape: {
+      type: 'rect',
+      fill: '#c8553d',
+      fillOpacity: 0.18,
+      stroke: '#c8553d',
+      strokeWidth: 2,
+      opacity: 0.95,
+      radius: 8,
+      lineStyle: 'solid'
+    },
+    note: {
+      color: '#e8c56a',
+      width: 240,
+      height: 200,
+      fontSize: 16
+    },
+    thread: {
+      color: '#b33a3a',
+      width: 2,
+      opacity: 0.95,
+      lineStyle: 'solid',
+      visualStyle: 'realistic',
+      connectionType: 'curved',
+      curve: 0.3
+    },
+    bindings: { ...DEFAULT_TOOL_BINDINGS },
+    visibility: Object.fromEntries(TOOL_ACTIONS.map((tool) => [tool.id, true])) as Record<
+      ToolAction,
+      boolean
+    >,
+    order: [...DEFAULT_TOOL_ORDER],
+    lastShape: 'rect'
   },
   interaction: {
     zoomSensitivity: 1,
@@ -321,6 +545,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
     snapshotOnImport: true,
     snapshotOnSpaceDelete: true,
     exportScale: 2,
+    exportFormat: 'png',
+    exportQuality: 0.92,
+    exportWidth: null,
+    exportHeight: null,
+    exportLockAspect: true,
+    exportTransparent: false,
     exportIncludeBackground: true,
     exportThreads: true,
     exportPins: true,
@@ -347,6 +577,49 @@ export function mergeSettings(raw: unknown): AppSettings {
   }
   const merged = merge(DEFAULT_SETTINGS as unknown as Record<string, unknown>, source)
   merged.version = SETTINGS_VERSION
+
+  // Migrate visual tool defaults from the pre-2.0 object settings when the
+  // new independent tool section did not exist yet.
+  const legacyObjects = source.objects as Record<string, unknown> | undefined
+  const hadTools = Boolean(source.tools && typeof source.tools === 'object')
+  if (legacyObjects && !hadTools) {
+    const objects = merged.objects as unknown as Record<string, number | string | boolean>
+    const tools = merged.tools as unknown as Record<string, Record<string, unknown>>
+    const drawColor = String(objects.drawColor)
+    const drawWidth = Number(objects.drawWidth)
+    const drawOpacity = Number(objects.drawOpacity)
+    const drawSmoothing = Number(objects.drawSmoothing)
+    for (const brush of ['pencil', 'chalk', 'marker']) {
+      tools[brush] = {
+        ...tools[brush],
+        color: drawColor,
+        width: drawWidth,
+        opacity: drawOpacity,
+        smoothing: drawSmoothing
+      }
+    }
+    tools.shape = {
+      ...tools.shape,
+      stroke: drawColor,
+      strokeWidth: Math.max(1, drawWidth),
+      opacity: drawOpacity
+    }
+    tools.thread = {
+      ...tools.thread,
+      color: String(objects.threadColor),
+      width: Number(objects.threadWidth),
+      opacity: Number(objects.threadOpacity),
+      curve: Number(objects.threadCurve)
+    }
+    tools.note = {
+      ...tools.note,
+      color: String(objects.noteColor),
+      width: Number(objects.noteWidth),
+      height: Number(objects.noteHeight),
+      fontSize: Number(objects.noteFontSize)
+    }
+  }
+
   return merged as unknown as AppSettings
 }
 

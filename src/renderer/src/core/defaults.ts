@@ -85,7 +85,7 @@ export function newProject(name = 'Untitled project'): Project {
 export function defaultCardSize(kind: CardKind, settings: AppSettings): { w: number; h: number } {
   switch (kind) {
     case 'note':
-      return { w: settings.objects.noteWidth, h: settings.objects.noteHeight }
+      return { w: settings.tools.note.width, h: settings.tools.note.height }
     case 'image':
       return { w: 360, h: 280 }
     case 'video':
@@ -145,7 +145,7 @@ export function newCard(kind: CardKind, opts: NewCardOptions): Card {
     color:
       opts.color ??
       (kind === 'note'
-        ? opts.settings.objects.noteColor
+        ? opts.settings.tools.note.color
         : kind === 'text'
           ? opts.settings.objects.cardBackground
           : undefined),
@@ -153,9 +153,23 @@ export function newCard(kind: CardKind, opts: NewCardOptions): Card {
       radius: opts.settings.objects.cardRadius,
       shadow: opts.settings.objects.cardShadow,
       opacity: opts.settings.objects.cardOpacity,
-      fontSize: kind === 'note' ? opts.settings.objects.noteFontSize : opts.settings.objects.cardFontSize,
+      fontSize:
+        kind === 'note'
+          ? opts.settings.tools.note.fontSize
+          : kind === 'text'
+            ? opts.settings.tools.text.fontSize
+            : opts.settings.objects.cardFontSize,
       fontFamily:
-        kind === 'note' ? opts.settings.objects.textFontFamily : opts.settings.objects.cardFontFamily,
+        kind === 'note'
+          ? opts.settings.objects.textFontFamily
+          : kind === 'text'
+            ? opts.settings.tools.text.fontFamily
+            : opts.settings.objects.cardFontFamily,
+      color: kind === 'text' ? opts.settings.tools.text.color : undefined,
+      align: kind === 'text' ? opts.settings.tools.text.align : undefined,
+      bold: kind === 'text' ? opts.settings.tools.text.bold : undefined,
+      italic: kind === 'text' ? opts.settings.tools.text.italic : undefined,
+      lineHeight: kind === 'text' ? opts.settings.tools.text.lineHeight : undefined,
       imageFit: opts.settings.objects.imageFit
     },
     categories: opts.categories ?? [],
@@ -213,16 +227,22 @@ export function newThread(
   settings: AppSettings,
   opts: NewThreadOptions = {}
 ): Thread {
+  const tool = settings.tools.thread
   return {
     id: uid('thr'),
     from,
     to,
-    color: opts.color ?? settings.objects.threadColor,
-    width: opts.width ?? settings.objects.threadWidth,
-    style: opts.style ?? settings.objects.threadStyle,
+    color: opts.color ?? tool.color,
+    width: opts.width ?? tool.width,
+    style:
+      opts.style ??
+      (tool.lineStyle === 'dashed' ? 'dashed' : tool.lineStyle === 'dotted' ? 'dotted' : 'thread'),
     label: opts.label,
-    curve: opts.curve ?? settings.objects.threadCurve,
-    opacity: opts.opacity ?? settings.objects.threadOpacity,
+    curve: opts.curve ?? tool.curve,
+    opacity: opts.opacity ?? tool.opacity,
+    visualStyle: tool.visualStyle,
+    connectionType: tool.connectionType,
+    lineStyle: tool.lineStyle,
     createdAt: Date.now()
   }
 }

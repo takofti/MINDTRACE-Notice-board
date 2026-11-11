@@ -3,6 +3,7 @@ import type { CardKind } from '@shared/types'
 import { useBoard, useActiveSpace, cardMatchesFilter } from '@/store/board'
 import { useUi } from '@/store/ui'
 import { useSettings } from '@/store/settings'
+import { useT } from '@/i18n'
 
 const KIND_OPTIONS: { id: CardKind; label: string }[] = [
   { id: 'text', label: 'Text' },
@@ -27,6 +28,7 @@ export default function FilterDialog(): React.JSX.Element | null {
   const project = useBoard((state) => state.project)
   const space = useActiveSpace()
   const showMinimap = useSettings((state) => state.settings.board.showMinimap)
+  const t = useT()
 
   if (modal !== 'filters') return null
   const categories = project?.categories ?? []
@@ -66,8 +68,8 @@ export default function FilterDialog(): React.JSX.Element | null {
             <Filter size={16} />
           </div>
           <div>
-            <h2>Filter this board</h2>
-            <p>Filtered cards keep their position. Nothing is moved or deleted.</p>
+            <h2>{t('Filter this board')}</h2>
+            <p>{t('Filtered cards keep their position. Nothing is moved or deleted.')}</p>
           </div>
           <button className="icon-btn close-btn" onClick={close} title="Close">
             <X size={15} />
@@ -75,21 +77,21 @@ export default function FilterDialog(): React.JSX.Element | null {
         </div>
         <div className="dialog-body filter-body">
           <div className="field-col">
-            <span className="field-label">Text in title, notes, files or categories</span>
+            <span className="field-label">{t('Text in title, notes, files or categories')}</span>
             <input
               className="input"
               value={filter.query}
               onChange={(event) => commit({ query: event.target.value })}
-              placeholder="Search this board…"
+              placeholder={t('Search this board…')}
               autoFocus
             />
           </div>
 
           <div className="field-col" style={{ marginTop: 16 }}>
             <div className="field-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Categories</span>
+              <span>{t('Categories')}</span>
               <span className="filter-preview-count">
-                {matched} / {cards.length} cards
+                {t('{matched} / {total} cards', { matched, total: cards.length })}
               </span>
             </div>
             <div className="chip-row">
@@ -104,12 +106,12 @@ export default function FilterDialog(): React.JSX.Element | null {
                   {category.name}
                 </button>
               ))}
-              {!categories.length && <span className="hint-text">No categories yet.</span>}
+              {!categories.length && <span className="hint-text">{t('No categories yet.')}</span>}
             </div>
           </div>
 
           <div className="field-col" style={{ marginTop: 16 }}>
-            <span className="field-label">Material type</span>
+            <span className="field-label">{t('Material type')}</span>
             <div className="filter-kinds">
               {KIND_OPTIONS.map((kind) => (
                 <button
@@ -117,7 +119,7 @@ export default function FilterDialog(): React.JSX.Element | null {
                   className={`chip ${filter.kinds.includes(kind.id) ? 'is-active' : ''}`}
                   onClick={() => toggleKind(kind.id)}
                 >
-                  {kind.label}
+                  {t(kind.label)}
                 </button>
               ))}
             </div>
@@ -127,8 +129,8 @@ export default function FilterDialog(): React.JSX.Element | null {
 
           <div className="setting-row">
             <div className="setting-label">
-              <strong>Show hidden cards</strong>
-              <small>Reveal cards you tucked away, as faint ghosts.</small>
+              <strong>{t('Show hidden cards')}</strong>
+              <small>{t('Reveal cards you tucked away, as faint ghosts.')}</small>
             </div>
             <button
               className={`toggle ${showHidden ? 'is-on' : ''}`}
@@ -139,8 +141,8 @@ export default function FilterDialog(): React.JSX.Element | null {
 
           <div className="setting-row" style={{ marginTop: 8 }}>
             <div className="setting-label">
-              <strong>Minimap</strong>
-              <small>Toggle the overview map for this and future sessions.</small>
+              <strong>{t('Minimap')}</strong>
+              <small>{t('Toggle the overview map for this and future sessions.')}</small>
             </div>
             <button
               className={`toggle ${showMinimap ? 'is-on' : ''}`}
@@ -150,14 +152,15 @@ export default function FilterDialog(): React.JSX.Element | null {
           </div>
 
           <div className="warning-box" style={{ marginTop: 14 }}>
-            Active filter: {anyFilter ? 'yes' : 'no'}. Cards outside the filter are hidden, but their threads and
-            layout are preserved. Clear the filter to bring them back.
+            {t('Active filter: {value}. Cards outside the filter are hidden, but their threads and layout are preserved. Clear the filter to bring them back.', {
+              value: anyFilter ? t('yes') : t('no')
+            })}
           </div>
         </div>
         <div className="dialog-foot">
           <div className="left">
-            {filter.active && <span>{matched} visible</span>}
-            {!filter.active && <span>No filter active</span>}
+            {filter.active && <span>{t('{visible} visible', { visible: matched })}</span>}
+            {!filter.active && <span>{t('No filter active')}</span>}
           </div>
           <button
             className="btn"
@@ -165,10 +168,10 @@ export default function FilterDialog(): React.JSX.Element | null {
               clearFilter()
             }}
           >
-            Clear filters
+            {t('Clear filters')}
           </button>
           <button className="btn btn-primary" onClick={close}>
-            Done
+            {t('Done')}
           </button>
         </div>
       </div>

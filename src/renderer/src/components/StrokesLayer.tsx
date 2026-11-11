@@ -68,12 +68,22 @@ function StrokeShape({
   chalkFilter: boolean
   smoothing: number
 }): React.JSX.Element {
-  const d = strokeSvgPathD(stroke, smoothing)
+  const d = strokeSvgPathD(
+    stroke,
+    smoothing,
+    stroke.cornerRadius ?? 0
+  )
   const arrow = arrowHeadPathD(stroke)
   const bbox = strokeBBox(stroke)
   const hitWidth = Math.max(14 / Math.max(zoom, 0.05), stroke.width + 7)
   const filter = stroke.tool === 'chalk' && chalkFilter ? 'url(#chalk-filter)' : undefined
   const opacity = hidden ? 0.18 : stroke.opacity
+  const dash =
+    stroke.lineStyle === 'dashed'
+      ? `${Math.max(6, stroke.width * 3)} ${Math.max(4, stroke.width * 2.4)}`
+      : stroke.lineStyle === 'dotted'
+        ? `1 ${Math.max(5, stroke.width * 3)}`
+        : undefined
 
   return (
     <g opacity={opacity}>
@@ -93,7 +103,12 @@ function StrokeShape({
         d={d}
         stroke={stroke.color}
         strokeWidth={stroke.width}
-        style={{ filter }}
+        strokeDasharray={dash}
+        style={{
+          filter,
+          fill: stroke.fill ?? 'none',
+          fillOpacity: stroke.fillOpacity ?? 1
+        }}
       />
       {arrow && <path d={arrow} fill={stroke.color} stroke="none" />}
       <path

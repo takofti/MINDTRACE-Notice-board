@@ -3,9 +3,9 @@ import {
   Circle,
   Eraser,
   Hand,
-  HelpCircle,
   Highlighter,
   Layers,
+  Link2,
   Minus,
   MousePointer2,
   Paperclip,
@@ -15,27 +15,31 @@ import {
   Square,
   StickyNote,
   Type,
-  Undo2
+  Undo2,
+  HelpCircle
 } from 'lucide-react'
-import type { ToolId } from '@shared/types'
+import type { ToolAction } from '@shared/settings'
 import { useBoard } from '@/store/board'
 import { useUi } from '@/store/ui'
 import { useSettings } from '@/store/settings'
+import { useT } from '@/i18n'
 import { emitBoardEvent, BOARD_EVENTS } from '@/services/events'
 
-const DRAWING_TOOLS: { id: ToolId; label: string; icon: typeof PenLine }[] = [
-  { id: 'chalk', label: 'Chalk', icon: PenLine },
-  { id: 'marker', label: 'Marker', icon: Highlighter },
-  { id: 'pencil', label: 'Pencil', icon: Pencil },
-  { id: 'eraser', label: 'Eraser', icon: Eraser }
-]
-
-const SHAPE_TOOLS: { id: ToolId; label: string; icon: typeof PenLine }[] = [
-  { id: 'line', label: 'Line', icon: Minus },
-  { id: 'arrow', label: 'Arrow', icon: ArrowUpRight },
-  { id: 'rect', label: 'Rectangle', icon: Square },
-  { id: 'ellipse', label: 'Ellipse', icon: Circle }
-]
+const TOOL_ICONS: Record<ToolAction, typeof Pencil> = {
+  select: MousePointer2,
+  hand: Hand,
+  note: StickyNote,
+  text: Type,
+  pencil: Pencil,
+  chalk: PenLine,
+  marker: Highlighter,
+  eraser: Eraser,
+  rect: Square,
+  ellipse: Circle,
+  line: Minus,
+  arrow: ArrowUpRight,
+  thread: Link2
+}
 
 export default function ToolRail(): React.JSX.Element {
   const tool = useBoard((state) => state.tool)
@@ -48,100 +52,109 @@ export default function ToolRail(): React.JSX.Element {
   const canRedo = useBoard((state) => state.history.future.length > 0)
   const openModal = useUi((state) => state.openModal)
   const toast = useUi((state) => state.toast)
-  const activeDrawing = useUi((state) => state.activeDrawingTool)
-  const setActiveDrawing = useUi((state) => state.setActiveDrawingTool)
-  const drawColor = useSettings((state) => state.settings.objects.drawColor)
+  const settings = useSettings((state) => state.settings)
+  const t = useT()
 
-  const chooseDrawing = (id: ToolId): void => {
-    setTool(tool === id ? 'select' : id)
-    if (id !== 'eraser') {
-      setActiveDrawing(id as typeof activeDrawing)
+  const binding = (action: ToolAction): string => settings.tools.bindings[action] ?? ''
+  const visible = (action: ToolAction): boolean => settings.tools.visibility[action] !== false
+  const activate = (action: ToolAction): void => {
+    if (action === 'rect' || action === 'ellipse' || action === 'line' || action === 'arrow') {
+      useSettings.getState().update('tools', { lastShape: action })
     }
+    setTool(tool === action ? 'select' : action)
+  }
+
+  const brushColor = (): string => {
+    if (tool === 'pencil') return settings.tools.pencil.color
+    if (tool === 'chalk') return settings.tools.chalk.color
+    if (tool === 'marker') return settings.tools.marker.color
+    if (tool === 'rect' || tool === 'ellipse' || tool === 'line' || tool === 'arrow') {
+      return settings.tools.shape.stroke
+    }
+    return settings.tools.pencil.color
+  }
+
+  const button = (action: ToolAction): React.JSX.Element | null => {
+    if (!visible(action)) return null
+    const Icon = TOOL_ICONS[action]
+    const label = t(
+      action === 'select'
+        ? 'Select & move'
+        : action === 'hand'
+          ? 'Pan'
+          : action === 'note'
+            ? 'Sticky note'
+            : action === 'text'
+              ? 'Text'
+              : action === 'pencil'
+                ? 'Pencil'
+                : action === 'chalk'
+                  ? 'Chalk'
+                  : action === 'marker'
+                    ? 'Marker'
+                    : action === 'eraser'
+                      ? 'Eraser'
+                      : action === 'rect'
+                        ? 'Rectangle'
+                        : action === 'ellipse'
+                          ? 'Ellipse'
+                          : action === 'line'
+                            ? 'Line'
+                            : action === 'arrow'
+                              ? 'Arrow'
+                              : 'Thread / connection'
+    )
+    const key = binding(action)
+    return (
+      <button
+        key={action}
+        className={`tool-btn ${tool === action ? 'is-active' : ''}`}
+        onClick={() => activate(action)}
+        title={`${label}${key ? ` (${key})` : ''}`}
+        aria-label={`${label}${key ? ` (${key})` : ''}`}
+        aria-pressed={tool === action}
+      >
+        <Icon size={16} />
+      </button>
+    )
   }
 
   return (
-    <nav className="tool-rail" aria-label="Board tools">
-      <button
-        className={`tool-btn ${tool === 'select' ? 'is-active' : ''}`}
-        onClick={() => setTool('select')}
-        title="Select & move (V)"
-      >
-        <MousePointer2 size={17} />
-      </button>
-      <button
-        className={`tool-btn ${tool === 'hand' ? 'is-active' : ''}`}
-        onClick={() => setTool(tool === 'hand' ? 'select' : 'hand')}
-        title="Pan board (Space + drag)"
-      >
-        <Hand size={17} />
-      </button>
-
-      <div className="tool-divider" />
-
-      <button
-        className="tool-btn"
-        onClick={() => emitBoardEvent(BOARD_EVENTS.create, { kind: 'note' })}
-        title="New sticky note (N)"
-      >
-        <StickyNote size={16} />
-      </button>
-      <button
-        className="tool-btn"
-        onClick={() => emitBoardEvent(BOARD_EVENTS.create, { kind: 'text' })}
-        title="New text card (T)"
-      >
-        <Type size={16} />
-      </button>
+    <nav className="tool-rail" aria-label={t('Tools')}>
+      {button('select')}
+      {button('hand')}
+      {(visible('select') || visible('hand')) && <div className="tool-divider" />}
+      {button('note')}
+      {button('text')}
       <button
         className="tool-btn"
         onClick={() => emitBoardEvent(BOARD_EVENTS.attach)}
-        title="Add image, video, audio, PDF or document"
+        title={t('Add image, video, audio, PDF or document')}
+        aria-label={t('Add image, video, audio, PDF or document')}
       >
         <Paperclip size={16} />
       </button>
-
       <div className="tool-divider" />
-
-      {DRAWING_TOOLS.map((item) => {
-        const Icon = item.icon
-        return (
-          <button
-            key={item.id}
-            className={`tool-btn ${tool === item.id ? 'is-active' : ''}`}
-            onClick={() => chooseDrawing(item.id)}
-            title={item.label}
-          >
-            <Icon size={16} />
-          </button>
-        )
-      })}
-
+      {button('pencil')}
+      {button('chalk')}
+      {button('marker')}
+      {button('eraser')}
       <div className="tool-divider" />
-
-      {SHAPE_TOOLS.map((item) => {
-        const Icon = item.icon
-        return (
-          <button
-            key={item.id}
-            className={`tool-btn ${tool === item.id ? 'is-active' : ''}`}
-            onClick={() => chooseDrawing(item.id)}
-            title={item.label}
-          >
-            <Icon size={16} />
-          </button>
-        )
-      })}
-
+      {button('rect')}
+      {button('ellipse')}
+      {button('line')}
+      {button('arrow')}
+      {button('thread')}
       <div className="tool-divider" />
-
       <button
         className="tool-btn"
         disabled={!selection.cards.length}
         onClick={() => {
           const id = groupSelection()
-          if (id) toast('Cards grouped — drag the label to move them together', 'success')
+          if (id) toast('Cards grouped', 'success')
         }}
-        title="Group selected cards (Ctrl+G)"
+        title={t('Group selected cards (Ctrl+G)')}
+        aria-label={t('Group selected cards (Ctrl+G)')}
       >
         <Layers size={16} />
       </button>
@@ -150,21 +163,20 @@ export default function ToolRail(): React.JSX.Element {
 
       <button
         className="tool-btn"
-        onClick={() => openModal('settings', 'objects')}
-        title="Drawing colour & brush settings"
+        onClick={() => openModal('settings', 'tools')}
+        title={t('Drawing colour & brush settings')}
+        aria-label={t('Drawing colour & brush settings')}
       >
-        <span className="tool-color" style={{ background: drawColor }} />
+        <span className="tool-color" style={{ background: brushColor() }} />
       </button>
-
       <div className="tool-divider" />
-
-      <button className="tool-btn" disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)">
+      <button className="tool-btn" disabled={!canUndo} onClick={undo} title={t('Undo (Ctrl+Z)')} aria-label={t('Undo (Ctrl+Z)')}>
         <Undo2 size={16} />
       </button>
-      <button className="tool-btn" disabled={!canRedo} onClick={redo} title="Redo (Ctrl+Shift+Z)">
+      <button className="tool-btn" disabled={!canRedo} onClick={redo} title={t('Redo (Ctrl+Shift+Z)')} aria-label={t('Redo (Ctrl+Shift+Z)')}>
         <Redo2 size={16} />
       </button>
-      <button className="tool-btn" onClick={() => openModal('help')} title="Shortcuts & how it works">
+      <button className="tool-btn" onClick={() => openModal('help')} title={t('Shortcuts & how it works')} aria-label={t('Shortcuts & how it works')}>
         <HelpCircle size={16} />
       </button>
     </nav>
