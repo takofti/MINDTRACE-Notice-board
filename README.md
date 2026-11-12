@@ -118,4 +118,5 @@ See [PROGRESS.md](PROGRESS.md) for an honest feature-by-feature status and known
 
 ## License
 
-Mindtrace is released under the [GNU General Public License v3.0](LICENSE).
+MINDTRACE is released under the MINDTRACE Proprietary Personal Use License.
+See the [LICENSE](LICENSE) file for details.
