@@ -23,7 +23,7 @@ Mindtrace is built for investigations, research, study, project planning, code a
 
 ## Install (Windows 10/11)
 
-Download one of these from **Releases**:
+Download one of these from [**Releases**](https://github.com/takofti/MINDTRACE-Notice-board/releases):
 
 - `Mindtrace-Setup-<version>.exe` — normal installer. Choose the folder, create a desktop shortcut, launch when finished, uninstall through Windows Settings.
 - `Mindtrace-Portable-<version>.exe` — runs without installation.
